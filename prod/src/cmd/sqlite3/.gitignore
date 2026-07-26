@@ -1,0 +1,2 @@
+# app/sqlite/packages 配下の zip から展開される生成物。手動改変しないため Git 管理対象外とする。
+/shell.c
