@@ -39,10 +39,16 @@ endif
 # app/makepart.mk (親階層) で CFLAGS/CXXFLAGS に GCC_WARN_BASE が設定された後、
 # makepart.mk は親から子の順に評価されるため、ここで追記する -Wno-* は
 # 常に元の -W* より後方に置かれ、GCC 上で有効に上書きできる。
-# MSVC は -W 系オプションを解釈できないため Linux 限定で追記する。
 # -Wmissing-prototypes は C/ObjC 専用 (GCC が C++ では警告を出す) のため
 # CFLAGS のみに追記する。それ以外は C/C++ 共通のため両方に追記する。
 ifdef PLATFORM_LINUX
     CFLAGS   += -Wno-padded -Wno-cast-qual -Wno-undef -Wno-switch-default -Wno-missing-prototypes -Wno-missing-declarations -Wno-unused-parameter
     CXXFLAGS += -Wno-padded -Wno-cast-qual -Wno-undef -Wno-switch-default -Wno-missing-declarations -Wno-unused-parameter
+endif
+
+# C4200: 非標準の拡張機能 (構造体/共用体中のサイズ 0 の配列)。sqlite3.c 内部の
+# フレキシブル配列メンバー (upstream 側の設計) に起因する。
+ifdef PLATFORM_WINDOWS
+    CFLAGS   += /wd4200
+    CXXFLAGS += /wd4200
 endif
