@@ -4,9 +4,6 @@
 # 手動改変しない (再展開で上書きされる)。行編集オプション (-DHAVE_READLINE 等) は
 # 付与せず、readline/editline への外部依存を避けた最小構成でビルドする。
 
-LIBSDIR += \
-	$(MYAPP_DIR)/prod/lib
-
 LIBS += sqlite3
 
 ifdef PLATFORM_LINUX
