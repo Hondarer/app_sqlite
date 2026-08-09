@@ -35,6 +35,8 @@ endif
 # - -Wmissing-prototypes / -Wmissing-declarations: 内部関数のプロトタイプ/事前
 #   宣言省略 (shell.c。両者は GCC 上で排他的に検出されるため両方抑制する)
 # - -Wunused-parameter: 未使用引数 (コールバック シグネチャ統一のための引数)
+# - -Wconversion / -Wsign-conversion: 暗黙の型変換と符号変換 (amalgamation 全体に
+#   及び、上流を改変せずに解消できない)
 #
 # app/makepart.mk (親階層) で CFLAGS/CXXFLAGS に GCC_WARN_BASE が設定された後、
 # makepart.mk は親から子の順に評価されるため、ここで追記する -Wno-* は
@@ -42,8 +44,8 @@ endif
 # -Wmissing-prototypes は C/ObjC 専用 (GCC が C++ では警告を出す) のため
 # CFLAGS のみに追記する。それ以外は C/C++ 共通のため両方に追記する。
 ifdef PLATFORM_LINUX
-    CFLAGS   += -Wno-padded -Wno-cast-qual -Wno-undef -Wno-switch-default -Wno-missing-prototypes -Wno-missing-declarations -Wno-unused-parameter
-    CXXFLAGS += -Wno-padded -Wno-cast-qual -Wno-undef -Wno-switch-default -Wno-missing-declarations -Wno-unused-parameter
+    CFLAGS   += -Wno-padded -Wno-cast-qual -Wno-undef -Wno-switch-default -Wno-missing-prototypes -Wno-missing-declarations -Wno-unused-parameter -Wno-conversion -Wno-sign-conversion
+    CXXFLAGS += -Wno-padded -Wno-cast-qual -Wno-undef -Wno-switch-default -Wno-missing-declarations -Wno-unused-parameter -Wno-conversion -Wno-sign-conversion
 endif
 
 # C4200: 非標準の拡張機能 (構造体/共用体中のサイズ 0 の配列)。sqlite3.c 内部の
