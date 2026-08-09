@@ -60,8 +60,8 @@ SQLite 本体は Public Domain です。単体の `LICENSE` ファイルはア�
 
 ## SQLite API モック
 
-SQLite を利用するアプリの単体テストでは、`<mock_sqlite3.h>` と `libmock_sqlite3` を使用できます。
-`Mock_sqlite3` を生成しない場合と、生成後に `EXPECT_CALL` や `ON_CALL` を設定しない場合は、動的ライブラリの実関数を呼び出します。
+SQLite を利用するアプリの単体テストでは、`<mock_sqlite3.h>` と `libmock_sqlite3` を使用できます。  
+`Mock_sqlite3` を生成しない場合と、生成後に `EXPECT_CALL` や `ON_CALL` を設定しない場合は、動的ライブラリの実関数を呼び出します。  
 テストごとに変更したい関数だけへ振る舞いを設定できます。
 
 ```cpp
@@ -69,8 +69,8 @@ NiceMock<Mock_sqlite3> mock_sqlite3;
 EXPECT_CALL(mock_sqlite3, sqlite3_open(StrEq(":memory:"), _)).WillOnce(Return(SQLITE_CANTOPEN));
 ```
 
-`sqlite3_config`、`sqlite3_db_config`、`sqlite3_mprintf` などの可変長引数 API は、可変長部分を `va_list` としてモックへ渡します。
-引数の内容を照合しない場合は、該当する `va_list` 引数に `_` を指定してください。
+`sqlite3_config`、`sqlite3_db_config`、`sqlite3_mprintf` などの可変長引数 API は、可変長部分を `va_list` としてモックへ渡します。  
+引数の内容を照合しない場合は、該当する `va_list` 引数に `_` を指定してください。  
 公開変数 `sqlite3_version`、`sqlite3_temp_directory`、`sqlite3_data_directory` は関数モックの対象外です。
 
 Linux では実行時に `app/sqlite/prod/lib`、Windows では `app/sqlite/prod/bin` から実ライブラリを探索できるように設定してください。

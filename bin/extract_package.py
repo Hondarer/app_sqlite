@@ -46,7 +46,7 @@ SQLITE_SOURCE_PREFIX = b"""/* Export the public API from the shared library. */
 # 展開対象: zip 内のファイル名 -> 展開先 (プレースホルダーは app_dir からの相対パス)
 #
 # sqlite3.c は内部で #include "sqlite3.h" のように同一ディレクトリ相対
-# (ダブルクォート) インクルードを使うため、cJSON と同様にヘッダーは
+# (ダブル クォート) インクルードを使うため、cJSON と同様にヘッダーは
 # prod/include 直下 (アンブレラ ヘッダー パターン) に配置する。
 # shell.c (公式 CLI) は lua フェーズで lua.c を取り込む方針と対称にするため、
 # prod/src/cmd/sqlite3/ に取り込み sqlite3 コマンドとしてビルドする。

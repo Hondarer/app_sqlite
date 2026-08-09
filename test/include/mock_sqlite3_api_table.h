@@ -1,4 +1,4 @@
-/* API 表として複数回インクルードするため、インクルードガードを定義しない。 */
+/* API 表として複数回インクルードするため、インクルード ガードを定義しない。 */
 #if defined(_WIN32)
 MOCK_SQLITE3_RET(int, sqlite3_win32_set_directory, (unsigned long type, void *value), (type, value), (_, _))
 MOCK_SQLITE3_RET(int, sqlite3_win32_set_directory8, (unsigned long type, const char *value), (type, value), (_, _))
