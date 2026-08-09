@@ -18,6 +18,27 @@ sys.stderr.reconfigure(encoding="utf-8")
 PACKAGE_NAME_PATTERN = re.compile(r"^sqlite-amalgamation-.*\.zip$", re.IGNORECASE)
 VERSION_PATTERN = re.compile(r"^sqlite-amalgamation-(\d+)\.zip$", re.IGNORECASE)
 
+SQLITE_HEADER_PREFIX = b"""/* Use DLL import by default for Windows consumers. */
+#if !defined(SQLITE_API)
+#if defined(__WINDOWS__) || defined(WIN32) || defined(WIN64) || defined(_MSC_VER) || defined(_WIN32)
+#define SQLITE_API __declspec(dllimport)
+#elif defined(__GNUC__)
+#define SQLITE_API __attribute__((visibility(\"default\")))
+#endif
+#endif
+
+"""
+SQLITE_SOURCE_PREFIX = b"""/* Export the public API from the shared library. */
+#if !defined(SQLITE_API)
+#if defined(__WINDOWS__) || defined(WIN32) || defined(WIN64) || defined(_MSC_VER) || defined(_WIN32)
+#define SQLITE_API __declspec(dllexport)
+#elif defined(__GNUC__)
+#define SQLITE_API __attribute__((visibility(\"default\")))
+#endif
+#endif
+
+"""
+
 # 展開対象: zip 内のファイル名 -> 展開先 (プレースホルダーは app_dir からの相対パス)
 #
 # sqlite3.c は内部で #include "sqlite3.h" のように同一ディレクトリ相対
@@ -143,7 +164,29 @@ def needs_extraction(zip_path, app_dir):
     marker = os.path.join(app_dir, *MARKER_TARGET)
     if not os.path.isfile(marker):
         return True
-    return os.path.getmtime(zip_path) > os.path.getmtime(marker)
+    if os.path.getmtime(zip_path) > os.path.getmtime(marker):
+        return True
+
+    header = os.path.join(app_dir, "prod", "include", "sqlite3.h")
+    source = os.path.join(app_dir, "prod", "libsrc", "sqlite3", "sqlite3.c")
+    if not os.path.isfile(header) or not os.path.isfile(source):
+        return True
+    with open(header, "rb") as f:
+        header_data = f.read()
+    with open(source, "rb") as f:
+        source_data = f.read()
+    return not (
+        header_data.startswith(SQLITE_HEADER_PREFIX)
+        and source_data.startswith(SQLITE_SOURCE_PREFIX)
+    )
+
+
+def prepare_extracted_data(src_name, data):
+    if src_name == "sqlite3.h":
+        return SQLITE_HEADER_PREFIX + data
+    if src_name == "sqlite3.c":
+        return SQLITE_SOURCE_PREFIX + data
+    return data
 
 
 def extract(zip_path, app_dir):
@@ -160,7 +203,7 @@ def extract(zip_path, app_dir):
             if member is None:
                 print(f"ERROR: zip 内に {src_name} が見つかりません: {zip_path}", file=sys.stderr)
                 return False
-            data = zf.read(member)
+            data = prepare_extracted_data(src_name, zf.read(member))
             tmp_path = dest_path + ".tmp"
             with open(tmp_path, "wb") as f:
                 f.write(data)

@@ -8,7 +8,13 @@ c-modernization-kit のワークスペース内 (`framework/makefw` 等と組み
 [SQLite](https://www.sqlite.org/) の amalgamation (単一ファイルにまとめられたソース配布形式。`sqlite3.c` / `sqlite3.h` / `sqlite3ext.h`) および公式 CLI シェル (`shell.c`) を、c-modernization-kit の makefw 規約に沿って取り込んだラッパー ライブラリです。  
 SQLite 自体のソースは改変せず、リリース アーカイブをそのまま展開して利用します。
 
-ビルド成果物は静的ライブラリ (`libsqlite3.a` (Linux) / `libsqlite3.lib` (Windows)) と、`shell.c` から生成する `sqlite3` コマンド (公式 CLI) です (shared 版は生成しません)。  
+ビルド成果物は動的ライブラリと、`shell.c` から生成する `sqlite3` コマンド (公式 CLI) です。
+
+- Linux: `libsqlite3.so`
+- Windows: `libsqlite3.dll` およびリンク用の import library `libsqlite3.lib`
+
+静的ライブラリ (`libsqlite3.a` および静的リンク用の `libsqlite3.lib`) は生成しません。
+
 `sqlite3` コマンドは行編集オプション (`-DHAVE_READLINE` 等) を付与しない最小構成でビルドしており、`readline`/`editline` 等の外部ライブラリには依存しません。
 
 ## パッケージの配置手順 (初回セットアップ)
