@@ -9,7 +9,9 @@ prod/libsrc/sqlite3, prod/src/cmd/sqlite3 へ展開する。外部ツール (unz
 import argparse
 import os
 import re
+import stat
 import sys
+import tempfile
 import zipfile
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -54,6 +56,7 @@ EXTRACT_TARGETS = {
 }
 
 # 再展開要否の判定に使う代表ファイル
+MARKER_SOURCE = "sqlite3.c"
 MARKER_TARGET = ("prod", "libsrc", "sqlite3", "sqlite3.c")
 
 # 生成物を除外するための .gitignore を配置するディレクトリと、その内容。
@@ -73,16 +76,62 @@ GITIGNORE_TARGETS = {
 GITIGNORE_HEADER = "# app/sqlite/packages 配下の zip から展開される生成物。手動改変しないため Git 管理対象外とする。\n"
 
 
+def atomic_replace(path, data):
+    """同じディレクトリの一意な一時ファイルを使ってファイルを置換する。"""
+    dir_path = os.path.dirname(path)
+    prefix = f".{os.path.basename(path)}."
+    try:
+        file_mode = stat.S_IMODE(os.stat(path).st_mode)
+    except FileNotFoundError:
+        current_umask = os.umask(0)
+        os.umask(current_umask)
+        file_mode = 0o666 & ~current_umask
+    tmp_path = None
+    try:
+        if isinstance(data, str):
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                newline="",
+                dir=dir_path,
+                prefix=prefix,
+                suffix=".tmp",
+                delete=False,
+            ) as f:
+                tmp_path = f.name
+                f.write(data)
+        else:
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=dir_path,
+                prefix=prefix,
+                suffix=".tmp",
+                delete=False,
+            ) as f:
+                tmp_path = f.name
+                f.write(data)
+        os.chmod(tmp_path, file_mode)
+        os.replace(tmp_path, path)
+    finally:
+        if tmp_path is not None:
+            try:
+                os.unlink(tmp_path)
+            except FileNotFoundError:
+                pass
+
+
+def iter_target_paths(app_dir):
+    for rel_parts in EXTRACT_TARGETS.values():
+        yield os.path.join(app_dir, *rel_parts)
+
+
 def ensure_gitignore(app_dir):
     for rel_parts, names in GITIGNORE_TARGETS.items():
         dir_path = os.path.join(app_dir, *rel_parts)
         os.makedirs(dir_path, exist_ok=True)
         gitignore_path = os.path.join(dir_path, ".gitignore")
         content = GITIGNORE_HEADER + "".join(f"/{name}\n" for name in names)
-        tmp_path = gitignore_path + ".tmp"
-        with open(tmp_path, "w", encoding="utf-8", newline="") as f:
-            f.write(content)
-        os.replace(tmp_path, gitignore_path)
+        atomic_replace(gitignore_path, content)
 
 
 def find_candidates(packages_dir):
@@ -161,16 +210,15 @@ def find_member(names, filename):
 
 
 def needs_extraction(zip_path, app_dir):
-    marker = os.path.join(app_dir, *MARKER_TARGET)
-    if not os.path.isfile(marker):
+    if any(not os.path.isfile(path) for path in iter_target_paths(app_dir)):
         return True
+
+    marker = os.path.join(app_dir, *MARKER_TARGET)
     if os.path.getmtime(zip_path) > os.path.getmtime(marker):
         return True
 
     header = os.path.join(app_dir, "prod", "include", "sqlite3.h")
     source = os.path.join(app_dir, "prod", "libsrc", "sqlite3", "sqlite3.c")
-    if not os.path.isfile(header) or not os.path.isfile(source):
-        return True
     with open(header, "rb") as f:
         header_data = f.read()
     with open(source, "rb") as f:
@@ -198,16 +246,18 @@ def extract(zip_path, app_dir):
 
     with zipfile.ZipFile(zip_path) as zf:
         names = zf.namelist()
-        for src_name, dest_path in dest_paths.items():
+        # 代表ファイルを最後に置換し、全出力の準備前に別プロセスが
+        # 展開完了と判定しないようにする。
+        ordered_sources = [name for name in dest_paths if name != MARKER_SOURCE]
+        ordered_sources.append(MARKER_SOURCE)
+        for src_name in ordered_sources:
+            dest_path = dest_paths[src_name]
             member = find_member(names, src_name)
             if member is None:
                 print(f"ERROR: zip 内に {src_name} が見つかりません: {zip_path}", file=sys.stderr)
                 return False
             data = prepare_extracted_data(src_name, zf.read(member))
-            tmp_path = dest_path + ".tmp"
-            with open(tmp_path, "wb") as f:
-                f.write(data)
-            os.replace(tmp_path, dest_path)
+            atomic_replace(dest_path, data)
 
     zip_mtime = os.path.getmtime(zip_path)
     for dest_path in dest_paths.values():
