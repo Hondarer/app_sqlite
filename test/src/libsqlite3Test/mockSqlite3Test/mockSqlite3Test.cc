@@ -102,3 +102,54 @@ TEST(mockSqlite3Test, overrides_variadic_config_result)
     // Assert
     EXPECT_EQ(SQLITE_BUSY, return_value); // [確認_異常系] - sqlite3_config の戻り値が SQLITE_BUSY であること。
 }
+
+// 実データベースを開かずに open / exec / close を単体隔離できることの確認
+TEST(mockSqlite3Test, isolates_open_exec_close_without_real_database)
+{
+    // Arrange
+    NiceMock<Mock_sqlite3> mock_sqlite3;
+    sqlite3 *fake_database = reinterpret_cast<sqlite3 *>(1);
+    sqlite3 *database = nullptr;
+
+    // Pre-Assert
+    EXPECT_CALL(mock_sqlite3, sqlite3_open(StrEq(":memory:"), _))
+        .WillOnce(DoAll(SetArgPointee<1>(fake_database), Return(SQLITE_OK)));
+    // [Pre-Assert確認_正常系] - sqlite3_open がインメモリ DB を指定して 1 回呼び出されること。
+    // [Pre-Assert手順] - sqlite3_open の出力引数に fake_database を設定し、SQLITE_OK を返却する。
+    EXPECT_CALL(mock_sqlite3, sqlite3_exec(fake_database, StrEq("SELECT 1;"), nullptr, nullptr, nullptr))
+        .WillOnce(
+            Return(SQLITE_OK)); // [Pre-Assert確認_正常系] - sqlite3_exec が SELECT 1; を指定して 1 回呼び出されること。
+                                // [Pre-Assert手順] - sqlite3_exec から SQLITE_OK を返却する。
+    EXPECT_CALL(mock_sqlite3, sqlite3_close(fake_database))
+        .WillOnce(Return(
+            SQLITE_OK)); // [Pre-Assert確認_正常系] - sqlite3_close が fake_database を指定して 1 回呼び出されること。
+                         // [Pre-Assert手順] - sqlite3_close から SQLITE_OK を返却する。
+
+    // Act
+    int open_result = sqlite3_open(":memory:", &database); // [手順] - sqlite3_open でインメモリ DB を開く。
+    int exec_result = sqlite3_exec(database, "SELECT 1;", nullptr, nullptr,
+                                   nullptr);    // [手順] - sqlite3_exec で SELECT 1; を実行する。
+    int close_result = sqlite3_close(database); // [手順] - sqlite3_close で DB を閉じる。
+
+    // Assert
+    EXPECT_EQ(SQLITE_OK, open_result);  // [確認_正常系] - sqlite3_open の戻り値が SQLITE_OK であること。
+    EXPECT_EQ(fake_database, database); // [確認_正常系] - sqlite3_open が database に fake_database を設定すること。
+    EXPECT_EQ(SQLITE_OK, exec_result);  // [確認_正常系] - sqlite3_exec の戻り値が SQLITE_OK であること。
+    EXPECT_EQ(SQLITE_OK, close_result); // [確認_正常系] - sqlite3_close の戻り値が SQLITE_OK であること。
+}
+
+// mock_sqlite3 だけで公開変数を参照できることの確認
+TEST(mockSqlite3Test, provides_public_variables_without_real_library)
+{
+    // Arrange
+
+    // Pre-Assert
+
+    // Act
+    const char *version = sqlite3_version; // [手順] - sqlite3_version を参照する。
+
+    // Assert
+    EXPECT_STREQ(SQLITE_VERSION, version);      // [確認_正常系] - sqlite3_version が SQLITE_VERSION と一致すること。
+    EXPECT_EQ(nullptr, sqlite3_temp_directory); // [確認_正常系] - sqlite3_temp_directory の初期値が NULL であること。
+    EXPECT_EQ(nullptr, sqlite3_data_directory); // [確認_正常系] - sqlite3_data_directory の初期値が NULL であること。
+}

@@ -69,12 +69,8 @@ TEST(exportTest, sqlite3_symbols_match_api_table)
     std::set<std::string> actual;
     for (const std::string &name : all_actual)
     {
-#if defined(_WIN32)
-        if (expected.count(name) != 0u)
-#else
         if (name.rfind("sqlite3_", 0u) == 0u && name != "sqlite3_version" && name != "sqlite3_temp_directory" &&
             name != "sqlite3_data_directory")
-#endif
         {
             actual.insert(name);
         }

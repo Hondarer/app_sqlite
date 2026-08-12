@@ -61,16 +61,43 @@ SQLite 本体は Public Domain です。単体の `LICENSE` ファイルはア�
 ## SQLite API モック
 
 SQLite を利用するアプリの単体テストでは、`<mock_sqlite3.h>` と `libmock_sqlite3` を使用できます。  
+テスト対象の `makepart.mk` では、`sqlite3` の代わりに `mock_sqlite3` をリンクします。  
+`sqlite3` と `mock_sqlite3` を同時にリンクしないでください。Linux では実ライブラリの強シンボルが弱定義のモックを上書きし、`EXPECT_CALL` が効かなくなります。
+
+```makefile
+ifdef PLATFORM_WINDOWS
+    DEFINES += SQLITE_API=
+endif
+
+LIBS += mock_sqlite3
+```
+
+Windows では、`SQLITE_API=` により SQLite の DLL import 宣言を無効にし、`mock_sqlite3` が提供する実シンボルを参照します。  
 `Mock_sqlite3` を生成しない場合と、生成後に `EXPECT_CALL` や `ON_CALL` を設定しない場合は、動的ライブラリの実関数を呼び出します。  
-テストごとに変更したい関数だけへ振る舞いを設定できます。
+実関数への委譲では、Linux の `LD_LIBRARY_PATH` または Windows の `PATH` から `libsqlite3` を読み込みます。
+
+振る舞いを変更するテストでは、`Mock_sqlite3` を生成して `EXPECT_CALL` または `ON_CALL` を指定します。
 
 ```cpp
 NiceMock<Mock_sqlite3> mock_sqlite3;
 EXPECT_CALL(mock_sqlite3, sqlite3_open(StrEq(":memory:"), _)).WillOnce(Return(SQLITE_CANTOPEN));
 ```
 
-`sqlite3_config`、`sqlite3_db_config`、`sqlite3_mprintf` などの可変長引数 API は、可変長部分を `va_list` としてモックへ渡します。  
-引数の内容を照合しない場合は、該当する `va_list` 引数に `_` を指定してください。  
-公開変数 `sqlite3_version`、`sqlite3_temp_directory`、`sqlite3_data_directory` は関数モックの対象外です。
+実のデータベースを開かずに単体隔離する場合は、SUT が呼び出す関数をすべてスタブしてください。  
+`sqlite3_open` を成功させるときは、`SetArgPointee` で `sqlite3 **` に偽ハンドルを設定します。  
+スタブしていない呼び出しは実関数へ委譲されるため、偽ハンドルを渡すと実関数が失敗します。
 
-Linux では実行時に `app/sqlite/prod/lib`、Windows では `app/sqlite/prod/bin` から実ライブラリを探索できるように設定してください。
+```cpp
+sqlite3 *fake_database = reinterpret_cast<sqlite3 *>(1);
+EXPECT_CALL(mock_sqlite3, sqlite3_open(StrEq(":memory:"), _))
+    .WillOnce(DoAll(SetArgPointee<1>(fake_database), Return(SQLITE_OK)));
+```
+
+`sqlite3_config`、`sqlite3_db_config`、`sqlite3_mprintf` などの可変長引数 API は、可変長部分を `va_list` としてモックへ渡します。  
+引数の内容を照合しない場合は、該当する `va_list` 引数に `_` を指定してください。
+
+公開変数 `sqlite3_version`、`sqlite3_temp_directory`、`sqlite3_data_directory` は関数モックの対象外です。  
+`mock_sqlite3` はこれらの変数を定義するので、実ライブラリなしでもリンクできます。  
+`sqlite3_version` の初期値は `SQLITE_VERSION` です。`sqlite3_temp_directory` と `sqlite3_data_directory` の初期値は `NULL` です。
+
+`sqlite3ext.h` の拡張 API 表はモック対象外です。

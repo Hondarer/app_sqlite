@@ -1,4 +1,16 @@
-/* API 表として複数回インクルードするため、インクルード ガードを定義しない。 */
+/* SQLite の公開関数一覧。
+ *
+ * このヘッダーは意図的に include guard を持たない。インクルード元で
+ * MOCK_SQLITE3_RET と MOCK_SQLITE3_VOID を定義し、宣言、実装、テストを同じ一覧から生成する。
+ */
+
+#ifndef MOCK_SQLITE3_RET
+    #error MOCK_SQLITE3_RET must be defined before including mock_sqlite3_api_table.h
+#endif
+#ifndef MOCK_SQLITE3_VOID
+    #error MOCK_SQLITE3_VOID must be defined before including mock_sqlite3_api_table.h
+#endif
+
 #if defined(_WIN32)
 MOCK_SQLITE3_RET(int, sqlite3_win32_set_directory, (unsigned long type, void *value), (type, value), (_, _))
 MOCK_SQLITE3_RET(int, sqlite3_win32_set_directory8, (unsigned long type, const char *value), (type, value), (_, _))

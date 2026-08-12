@@ -1,6 +1,8 @@
 #include <mock_sqlite3.h>
 
 #include <cstdarg>
+#include <cstdio>
+#include <type_traits>
 
 namespace
 {
@@ -20,6 +22,39 @@ using vdbe_coverage_callback_fn = void (*)(void *, unsigned int, unsigned char, 
 template <typename FunctionType> FunctionType resolve_variadic(const char *name)
 {
     return reinterpret_cast<FunctionType>(resolveSharedSymbolOrExit(kLibSqlite3Name, name));
+}
+
+template <typename T> void trace_result(const char *func, const T value)
+{
+    if (getTraceLevel() <= TRACE_NONE)
+    {
+        return;
+    }
+
+    std::printf("  > %s", func);
+    if (getTraceLevel() >= TRACE_DETAIL)
+    {
+        if constexpr (std::is_pointer_v<T>)
+        {
+            std::printf(" -> 0x%p\n", (const void *)value);
+        }
+        else
+        {
+            std::printf(" -> %lld\n", (long long)value);
+        }
+    }
+    else
+    {
+        std::printf("\n");
+    }
+}
+
+void trace_void(const char *func)
+{
+    if (getTraceLevel() > TRACE_NONE)
+    {
+        std::printf("  > %s\n", func);
+    }
 }
 
 bool is_db_flag_operation(int operation)
@@ -57,7 +92,7 @@ bool is_db_flag_operation(int operation)
 
 int delegate_real_sqlite3_config(int operation, va_list args)
 {
-    static sqlite3_config_fn real_function = resolve_variadic<sqlite3_config_fn>("sqlite3_config");
+    static sqlite3_config_fn real_fn = resolve_variadic<sqlite3_config_fn>("sqlite3_config");
 
     switch (operation)
     {
@@ -67,20 +102,20 @@ int delegate_real_sqlite3_config(int operation, va_list args)
     case SQLITE_CONFIG_SCRATCH:
     case SQLITE_CONFIG_PCACHE:
     case SQLITE_CONFIG_GETPCACHE:
-        return real_function(operation);
+        return real_fn(operation);
     case SQLITE_CONFIG_MALLOC:
     case SQLITE_CONFIG_GETMALLOC:
-        return real_function(operation, va_arg(args, sqlite3_mem_methods *));
+        return real_fn(operation, va_arg(args, sqlite3_mem_methods *));
     case SQLITE_CONFIG_MUTEX:
     case SQLITE_CONFIG_GETMUTEX:
-        return real_function(operation, va_arg(args, sqlite3_mutex_methods *));
+        return real_fn(operation, va_arg(args, sqlite3_mutex_methods *));
     case SQLITE_CONFIG_PAGECACHE:
     case SQLITE_CONFIG_HEAP:
     {
         void *memory = va_arg(args, void *);
         int size = va_arg(args, int);
         int count = va_arg(args, int);
-        return real_function(operation, memory, size, count);
+        return real_fn(operation, memory, size, count);
     }
     case SQLITE_CONFIG_MEMSTATUS:
     case SQLITE_CONFIG_SMALL_MALLOC:
@@ -89,68 +124,68 @@ int delegate_real_sqlite3_config(int operation, va_list args)
     case SQLITE_CONFIG_WIN32_HEAPSIZE:
     case SQLITE_CONFIG_STMTJRNL_SPILL:
     case SQLITE_CONFIG_SORTERREF_SIZE:
-        return real_function(operation, va_arg(args, int));
+        return real_fn(operation, va_arg(args, int));
     case SQLITE_CONFIG_PCACHE_HDRSZ:
     case SQLITE_CONFIG_ROWID_IN_VIEW:
-        return real_function(operation, va_arg(args, int *));
+        return real_fn(operation, va_arg(args, int *));
     case SQLITE_CONFIG_LOOKASIDE:
     {
         int size = va_arg(args, int);
         int count = va_arg(args, int);
-        return real_function(operation, size, count);
+        return real_fn(operation, size, count);
     }
     case SQLITE_CONFIG_PCACHE2:
     case SQLITE_CONFIG_GETPCACHE2:
-        return real_function(operation, va_arg(args, sqlite3_pcache_methods2 *));
+        return real_fn(operation, va_arg(args, sqlite3_pcache_methods2 *));
     case SQLITE_CONFIG_LOG:
     {
         log_callback_fn callback = va_arg(args, log_callback_fn);
         void *context = va_arg(args, void *);
-        return real_function(operation, callback, context);
+        return real_fn(operation, callback, context);
     }
     case SQLITE_CONFIG_SQLLOG:
     {
         sql_log_callback_fn callback = va_arg(args, sql_log_callback_fn);
         void *context = va_arg(args, void *);
-        return real_function(operation, callback, context);
+        return real_fn(operation, callback, context);
     }
     case SQLITE_CONFIG_MMAP_SIZE:
     {
         sqlite3_int64 default_size = va_arg(args, sqlite3_int64);
         sqlite3_int64 maximum_size = va_arg(args, sqlite3_int64);
-        return real_function(operation, default_size, maximum_size);
+        return real_fn(operation, default_size, maximum_size);
     }
     case SQLITE_CONFIG_PMASZ:
-        return real_function(operation, va_arg(args, unsigned int));
+        return real_fn(operation, va_arg(args, unsigned int));
     case SQLITE_CONFIG_MEMDB_MAXSIZE:
-        return real_function(operation, va_arg(args, sqlite3_int64));
+        return real_fn(operation, va_arg(args, sqlite3_int64));
     default:
-        return real_function(operation);
+        return real_fn(operation);
     }
 }
 
 int delegate_real_sqlite3_db_config(sqlite3 *database, int operation, va_list args)
 {
-    static sqlite3_db_config_fn real_function = resolve_variadic<sqlite3_db_config_fn>("sqlite3_db_config");
+    static sqlite3_db_config_fn real_fn = resolve_variadic<sqlite3_db_config_fn>("sqlite3_db_config");
 
     if (operation == SQLITE_DBCONFIG_MAINDBNAME)
     {
-        return real_function(database, operation, va_arg(args, const char *));
+        return real_fn(database, operation, va_arg(args, const char *));
     }
     if (operation == SQLITE_DBCONFIG_LOOKASIDE)
     {
         void *buffer = va_arg(args, void *);
         int size = va_arg(args, int);
         int count = va_arg(args, int);
-        return real_function(database, operation, buffer, size, count);
+        return real_fn(database, operation, buffer, size, count);
     }
     if (operation == SQLITE_DBCONFIG_FP_DIGITS || is_db_flag_operation(operation))
     {
         int value = va_arg(args, int);
         int *result = va_arg(args, int *);
-        return real_function(database, operation, value, result);
+        return real_fn(database, operation, value, result);
     }
-    return real_function(database, operation);
+    return real_fn(database, operation);
 }
 
 char *delegate_real_sqlite3_mprintf(const char *format, va_list args)
@@ -170,23 +205,23 @@ void delegate_real_sqlite3_str_appendf(sqlite3_str *string, const char *format, 
 
 void delegate_real_sqlite3_log(int error_code, const char *format, va_list args)
 {
-    static sqlite3_log_fn real_function = resolve_variadic<sqlite3_log_fn>("sqlite3_log");
+    static sqlite3_log_fn real_fn = resolve_variadic<sqlite3_log_fn>("sqlite3_log");
     char *message = delegate_real_sqlite3_vmprintf(format, args);
 
     if (message != nullptr)
     {
-        real_function(error_code, "%s", message);
+        real_fn(error_code, "%s", message);
         delegate_real_sqlite3_free(message);
     }
     else
     {
-        real_function(error_code, "%s", "");
+        real_fn(error_code, "%s", "");
     }
 }
 
 int delegate_real_sqlite3_test_control(int operation, va_list args)
 {
-    static sqlite3_test_control_fn real_function = resolve_variadic<sqlite3_test_control_fn>("sqlite3_test_control");
+    static sqlite3_test_control_fn real_fn = resolve_variadic<sqlite3_test_control_fn>("sqlite3_test_control");
 
     switch (operation)
     {
@@ -194,78 +229,78 @@ int delegate_real_sqlite3_test_control(int operation, va_list args)
     case SQLITE_TESTCTRL_PRNG_RESTORE:
     case SQLITE_TESTCTRL_BYTEORDER:
     case SQLITE_TESTCTRL_ISINIT:
-        return real_function(operation);
+        return real_fn(operation);
     case SQLITE_TESTCTRL_PRNG_SEED:
     {
         int seed = va_arg(args, int);
         sqlite3 *database = va_arg(args, sqlite3 *);
-        return real_function(operation, seed, database);
+        return real_fn(operation, seed, database);
     }
     case SQLITE_TESTCTRL_FK_NO_ACTION:
     {
         sqlite3 *database = va_arg(args, sqlite3 *);
         int enabled = va_arg(args, int);
-        return real_function(operation, database, enabled);
+        return real_fn(operation, database, enabled);
     }
     case SQLITE_TESTCTRL_BITVEC_TEST:
     {
         int size = va_arg(args, int);
         int *program = va_arg(args, int *);
-        return real_function(operation, size, program);
+        return real_fn(operation, size, program);
     }
     case SQLITE_TESTCTRL_FAULT_INSTALL:
-        return real_function(operation, va_arg(args, fault_callback_fn));
+        return real_fn(operation, va_arg(args, fault_callback_fn));
     case SQLITE_TESTCTRL_BENIGN_MALLOC_HOOKS:
     {
         void_callback_fn begin = va_arg(args, void_callback_fn);
         void_callback_fn end = va_arg(args, void_callback_fn);
-        return real_function(operation, begin, end);
+        return real_fn(operation, begin, end);
     }
     case SQLITE_TESTCTRL_PENDING_BYTE:
-        return real_function(operation, va_arg(args, unsigned int));
+        return real_fn(operation, va_arg(args, unsigned int));
     case SQLITE_TESTCTRL_ASSERT:
     case SQLITE_TESTCTRL_ALWAYS:
     case SQLITE_TESTCTRL_NEVER_CORRUPT:
     case SQLITE_TESTCTRL_EXTRA_SCHEMA_CHECKS:
     case SQLITE_TESTCTRL_ONCE_RESET_THRESHOLD:
-        return real_function(operation, va_arg(args, int));
+        return real_fn(operation, va_arg(args, int));
     case SQLITE_TESTCTRL_JSON_SELFCHECK:
-        return real_function(operation, va_arg(args, int *));
+        return real_fn(operation, va_arg(args, int *));
     case SQLITE_TESTCTRL_OPTIMIZATIONS:
     {
         sqlite3 *database = va_arg(args, sqlite3 *);
         unsigned int flags = va_arg(args, unsigned int);
-        return real_function(operation, database, flags);
+        return real_fn(operation, database, flags);
     }
     case SQLITE_TESTCTRL_GETOPT:
     {
         sqlite3 *database = va_arg(args, sqlite3 *);
         int *flags = va_arg(args, int *);
-        return real_function(operation, database, flags);
+        return real_fn(operation, database, flags);
     }
     case SQLITE_TESTCTRL_INTERNAL_FUNCTIONS:
-        return real_function(operation, va_arg(args, sqlite3 *));
+        return real_fn(operation, va_arg(args, sqlite3 *));
     case SQLITE_TESTCTRL_LOCALTIME_FAULT:
     {
         int enabled = va_arg(args, int);
         if (enabled == 2)
         {
             localtime_callback_fn callback = va_arg(args, localtime_callback_fn);
-            return real_function(operation, enabled, callback);
+            return real_fn(operation, enabled, callback);
         }
-        return real_function(operation, enabled);
+        return real_fn(operation, enabled);
     }
     case SQLITE_TESTCTRL_VDBE_COVERAGE:
     {
         vdbe_coverage_callback_fn callback = va_arg(args, vdbe_coverage_callback_fn);
         void *context = va_arg(args, void *);
-        return real_function(operation, callback, context);
+        return real_fn(operation, callback, context);
     }
     case SQLITE_TESTCTRL_SORTER_MMAP:
     {
         sqlite3 *database = va_arg(args, sqlite3 *);
         int maximum = va_arg(args, int);
-        return real_function(operation, database, maximum);
+        return real_fn(operation, database, maximum);
     }
     case SQLITE_TESTCTRL_IMPOSTER:
     {
@@ -273,23 +308,23 @@ int delegate_real_sqlite3_test_control(int operation, va_list args)
         const char *database_name = va_arg(args, const char *);
         int mode = va_arg(args, int);
         int root_page = va_arg(args, int);
-        return real_function(operation, database, database_name, mode, root_page);
+        return real_fn(operation, database, database_name, mode, root_page);
     }
     case SQLITE_TESTCTRL_PARSER_COVERAGE:
-        return real_function(operation, va_arg(args, FILE *));
+        return real_fn(operation, va_arg(args, FILE *));
     case SQLITE_TESTCTRL_RESULT_INTREAL:
-        return real_function(operation, va_arg(args, sqlite3_context *));
+        return real_fn(operation, va_arg(args, sqlite3_context *));
     case SQLITE_TESTCTRL_SEEK_COUNT:
     {
         sqlite3 *database = va_arg(args, sqlite3 *);
         sqlite3_uint64 *count = va_arg(args, sqlite3_uint64 *);
-        return real_function(operation, database, count);
+        return real_fn(operation, database, count);
     }
     case SQLITE_TESTCTRL_TRACEFLAGS:
     {
         int trace_operation = va_arg(args, int);
         unsigned int *flags = va_arg(args, unsigned int *);
-        return real_function(operation, trace_operation, flags);
+        return real_fn(operation, trace_operation, flags);
     }
     case SQLITE_TESTCTRL_LOGEST:
     {
@@ -297,34 +332,34 @@ int delegate_real_sqlite3_test_control(int operation, va_list args)
         int *log_estimate = va_arg(args, int *);
         sqlite3_uint64 *integer = va_arg(args, sqlite3_uint64 *);
         int *log_estimate_2 = va_arg(args, int *);
-        return real_function(operation, input, log_estimate, integer, log_estimate_2);
+        return real_fn(operation, input, log_estimate, integer, log_estimate_2);
     }
     case SQLITE_TESTCTRL_ATOF:
     {
         const char *input = va_arg(args, const char *);
         double *result = va_arg(args, double *);
-        return real_function(operation, input, result);
+        return real_fn(operation, input, result);
     }
     case SQLITE_TESTCTRL_TUNE:
     {
         int identifier = va_arg(args, int);
         int *value = va_arg(args, int *);
-        return real_function(operation, identifier, value);
+        return real_fn(operation, identifier, value);
     }
     default:
-        return real_function(operation);
+        return real_fn(operation);
     }
 }
 
 int delegate_real_sqlite3_vtab_config(sqlite3 *database, int operation, va_list args)
 {
-    static sqlite3_vtab_config_fn real_function = resolve_variadic<sqlite3_vtab_config_fn>("sqlite3_vtab_config");
+    static sqlite3_vtab_config_fn real_fn = resolve_variadic<sqlite3_vtab_config_fn>("sqlite3_vtab_config");
 
     if (operation == SQLITE_VTAB_CONSTRAINT_SUPPORT)
     {
-        return real_function(database, operation, va_arg(args, int));
+        return real_fn(database, operation, va_arg(args, int));
     }
-    return real_function(database, operation);
+    return real_fn(database, operation);
 }
 
 #if !defined(_WIN32)
@@ -347,6 +382,7 @@ MOCK_SQLITE3_VARIADIC_IMPL(int, sqlite3_config, int operation, ...)
         return_value = delegate_real_sqlite3_config(operation, args);
     }
     va_end(args);
+    trace_result(__func__, return_value);
     return return_value;
 }
 
@@ -364,6 +400,7 @@ MOCK_SQLITE3_VARIADIC_IMPL(int, sqlite3_db_config, sqlite3 *database, int operat
         return_value = delegate_real_sqlite3_db_config(database, operation, args);
     }
     va_end(args);
+    trace_result(__func__, return_value);
     return return_value;
 }
 
@@ -381,6 +418,7 @@ MOCK_SQLITE3_VARIADIC_IMPL(char *, sqlite3_mprintf, const char *format, ...)
         return_value = delegate_real_sqlite3_mprintf(format, args);
     }
     va_end(args);
+    trace_result(__func__, return_value);
     return return_value;
 }
 
@@ -398,6 +436,7 @@ MOCK_SQLITE3_VARIADIC_IMPL(char *, sqlite3_snprintf, int size, char *buffer, con
         return_value = delegate_real_sqlite3_snprintf(size, buffer, format, args);
     }
     va_end(args);
+    trace_result(__func__, return_value);
     return return_value;
 }
 
@@ -414,6 +453,7 @@ MOCK_SQLITE3_VARIADIC_IMPL(void, sqlite3_str_appendf, sqlite3_str *string, const
         delegate_real_sqlite3_str_appendf(string, format, args);
     }
     va_end(args);
+    trace_void(__func__);
 }
 
 MOCK_SQLITE3_VARIADIC_IMPL(void, sqlite3_log, int error_code, const char *format, ...)
@@ -429,6 +469,7 @@ MOCK_SQLITE3_VARIADIC_IMPL(void, sqlite3_log, int error_code, const char *format
         delegate_real_sqlite3_log(error_code, format, args);
     }
     va_end(args);
+    trace_void(__func__);
 }
 
 MOCK_SQLITE3_VARIADIC_IMPL(int, sqlite3_test_control, int operation, ...)
@@ -445,6 +486,7 @@ MOCK_SQLITE3_VARIADIC_IMPL(int, sqlite3_test_control, int operation, ...)
         return_value = delegate_real_sqlite3_test_control(operation, args);
     }
     va_end(args);
+    trace_result(__func__, return_value);
     return return_value;
 }
 
@@ -462,6 +504,7 @@ MOCK_SQLITE3_VARIADIC_IMPL(int, sqlite3_vtab_config, sqlite3 *database, int oper
         return_value = delegate_real_sqlite3_vtab_config(database, operation, args);
     }
     va_end(args);
+    trace_result(__func__, return_value);
     return return_value;
 }
 
