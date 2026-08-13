@@ -100,4 +100,7 @@ EXPECT_CALL(mock_sqlite3, sqlite3_open(StrEq(":memory:"), _))
 `mock_sqlite3` はこれらの変数を定義するので、実ライブラリなしでもリンクできます。  
 `sqlite3_version` の初期値は `SQLITE_VERSION` です。`sqlite3_temp_directory` と `sqlite3_data_directory` の初期値は `NULL` です。
 
+`exportTest` は公開ヘッダー `sqlite3.h` に載る関数だけを検査します。  
+Windows の DLL には `sqlite3.h` に無い `sqlite3_win32_*` が追加で出ますが、これらは検査対象外です。
+
 `sqlite3ext.h` の拡張 API 表はモック対象外です。

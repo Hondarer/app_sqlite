@@ -51,6 +51,17 @@ static const char *const kExpectedExportNames[] = {
     "sqlite3_str_appendf", "sqlite3_log",       "sqlite3_test_control", "sqlite3_vtab_config",
 };
 
+#if defined(_WIN32)
+// sqlite3.c の os_win.c 由来。SQLITE_API のため DLL に出るが、sqlite3.h には無い。
+// SQLITE_WIN32_MALLOC 時の sqlite3_win32_compact_heap / sqlite3_win32_reset_heap も同様で、
+// 現行ビルドでは出ない。将来出た場合は同じ理由でこの一覧へ追加する。
+static const char *const kUnofficialWin32ExportNames[] = {
+    "sqlite3_win32_is_nt",           "sqlite3_win32_mbcs_to_utf8",    "sqlite3_win32_mbcs_to_utf8_v2",
+    "sqlite3_win32_sleep",           "sqlite3_win32_unicode_to_utf8", "sqlite3_win32_utf8_to_mbcs",
+    "sqlite3_win32_utf8_to_mbcs_v2", "sqlite3_win32_utf8_to_unicode", "sqlite3_win32_write_debug",
+};
+#endif /* _WIN32 */
+
 // libsqlite3 の公開関数と mock_sqlite3 の API 表が一致することの確認
 TEST(exportTest, sqlite3_symbols_match_api_table)
 {
@@ -69,11 +80,30 @@ TEST(exportTest, sqlite3_symbols_match_api_table)
     std::set<std::string> actual;
     for (const std::string &name : all_actual)
     {
-        if (name.rfind("sqlite3_", 0u) == 0u && name != "sqlite3_version" && name != "sqlite3_temp_directory" &&
-            name != "sqlite3_data_directory")
+        if (name.rfind("sqlite3_", 0u) != 0u)
         {
-            actual.insert(name);
+            continue;
         }
+        if (name == "sqlite3_version" || name == "sqlite3_temp_directory" || name == "sqlite3_data_directory")
+        {
+            continue;
+        }
+#if defined(_WIN32)
+        bool unofficial_win32 = false;
+        for (const char *unofficial_name : kUnofficialWin32ExportNames)
+        {
+            if (name == unofficial_name)
+            {
+                unofficial_win32 = true;
+                break;
+            }
+        }
+        if (unofficial_win32)
+        {
+            continue;
+        }
+#endif /* _WIN32 */
+        actual.insert(name);
     }
 
     // Assert
