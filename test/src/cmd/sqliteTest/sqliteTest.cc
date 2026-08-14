@@ -6,6 +6,7 @@ class sqliteTest : public Test
 {
 };
 
+// CREATE、INSERT、SELECT が一連で成功することの確認
 TEST_F(sqliteTest, exec_create_insert_select_roundtrip)
 {
     // Arrange
@@ -52,6 +53,7 @@ TEST_F(sqliteTest, exec_create_insert_select_roundtrip)
     sqlite3_close(db);
 }
 
+// 不正な SQL がエラーを返すことの確認
 TEST_F(sqliteTest, exec_invalid_sql_returns_error)
 {
     // Arrange
@@ -74,6 +76,7 @@ TEST_F(sqliteTest, exec_invalid_sql_returns_error)
     sqlite3_close(db);
 }
 
+// 整数と文字列のバインドが反映されることの確認
 TEST_F(sqliteTest, prepared_statement_bind_int_and_text)
 {
     // Arrange
