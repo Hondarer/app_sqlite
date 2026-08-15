@@ -127,10 +127,10 @@ Mock_sqlite3::Mock_sqlite3()
     ON_CALL(*this, sqlite3_log(_, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_log));
     ON_CALL(*this, sqlite3_test_control(_, _)).WillByDefault(Invoke(delegate_real_sqlite3_test_control));
     ON_CALL(*this, sqlite3_vtab_config(_, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_vtab_config));
-    _mock_sqlite3 = this;
+    TESTFW_REGISTER_MOCK_INSTANCE(_mock_sqlite3);
 }
 
 Mock_sqlite3::~Mock_sqlite3()
 {
-    _mock_sqlite3 = nullptr;
+    TESTFW_UNREGISTER_MOCK_INSTANCE(_mock_sqlite3);
 }
