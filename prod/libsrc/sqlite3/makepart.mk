@@ -8,6 +8,18 @@
 # (このディレクトリの makefile/makepart.mk 自体は手書きファイルであり、
 #  通常どおり規範・clang-format の対象とする)
 
+# 外来ヘッダーの警告は SYSTEM_INCDIR で利用側から分離する。
+# upstream の一次ソース自体に残る警告だけを、このリーフで抑制する。
+ifdef PLATFORM_LINUX
+    CFLAGS   += -Wno-padded -Wno-cast-qual -Wno-undef -Wno-switch-default -Wno-missing-prototypes -Wno-missing-declarations -Wno-unused-parameter -Wno-conversion -Wno-sign-conversion
+    CXXFLAGS += -Wno-padded -Wno-cast-qual -Wno-undef -Wno-switch-default -Wno-missing-declarations -Wno-unused-parameter -Wno-conversion -Wno-sign-conversion
+endif
+
+ifdef PLATFORM_WINDOWS
+    CFLAGS   += /wd4200
+    CXXFLAGS += /wd4200
+endif
+
 ifdef PLATFORM_LINUX
     # 公開 API 以外を hidden とし、SQLITE_API のシンボルだけを公開する。
     CFLAGS   += -fvisibility=hidden

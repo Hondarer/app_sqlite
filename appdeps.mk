@@ -1,2 +1,2 @@
-# sqlite はスタンドアロン ライブラリであり、他 app への依存を持たない。
-APP_DEPS :=
+# 提供側の定義: SQLite 由来の prod/include は system include として公開する。
+APP_PROD_INCLUDE_CLASS := system
