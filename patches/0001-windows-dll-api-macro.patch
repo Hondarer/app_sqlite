@@ -1,0 +1,30 @@
+--- a/prod/include/sqlite3.h
++++ b/prod/include/sqlite3.h
+@@ -1,3 +1,12 @@
++/* Use DLL import by default for Windows consumers. */
++#if !defined(SQLITE_API)
++#if defined(__WINDOWS__) || defined(WIN32) || defined(WIN64) || defined(_MSC_VER) || defined(_WIN32)
++#define SQLITE_API __declspec(dllimport)
++#elif defined(__GNUC__)
++#define SQLITE_API __attribute__((visibility("default")))
++#endif
++#endif
++
+ /*
+ ** 2001-09-15
+ **
+--- a/prod/libsrc/sqlite3/sqlite3.c
++++ b/prod/libsrc/sqlite3/sqlite3.c
+@@ -1,3 +1,12 @@
++/* Export the public API from the shared library. */
++#if !defined(SQLITE_API)
++#if defined(__WINDOWS__) || defined(WIN32) || defined(WIN64) || defined(_MSC_VER) || defined(_WIN32)
++#define SQLITE_API __declspec(dllexport)
++#elif defined(__GNUC__)
++#define SQLITE_API __attribute__((visibility("default")))
++#endif
++#endif
++
+ /******************************************************************************
+ ** This file is an amalgamation of many separate C source files from SQLite
+ ** version 3.53.4.  By combining all the individual C code files into this

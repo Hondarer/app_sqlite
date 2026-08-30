@@ -38,6 +38,11 @@ SQLite を利用するプログラムの単体テスト向けに、Google Mock �
 配置後、`make` (または `make test`) を実行すると、`app/sqlite/bin/extract_package.py` が自動的に `prod/include/`、`prod/libsrc/sqlite3/`、`prod/src/cmd/sqlite3/` へ展開します。  
 展開先はいずれも生成物であり `.gitignore` 対象です。
 
+展開に続けて、`app/sqlite/patches/` の unified diff を自動的に適用します。  
+適用器は `framework/makefw/bin/apply_patches.py` (app 間で共有する適用器) です。  
+sqlite3 本体への変更はすべてこのパッチ経由で行い、展開直後のファイルを直接編集することはありません。  
+パッチの一覧と個々の目的は [patches/README.md](patches/README.md) を参照してください。
+
 `packages/` にアーカイブが存在しない状態で `make` を実行すると、ビルドはエラーで停止し、配置方法の案内が表示されます。
 
 `packages/` に複数のアーカイブが存在する場合はエラーにはせず、ファイル名のバージョン番号が最も新しいものを自動的に採用します (バージョン番号が読み取れないファイルが混在する場合は、更新日時が最も新しいものを採用します)。  
