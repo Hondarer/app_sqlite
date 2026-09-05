@@ -65,7 +65,7 @@ SQLite 本体は Public Domain です。単体の `LICENSE` ファイルはア�
 - `prod/src/cmd/sqlite3/` : `shell.c` (生成物) から構築する公式 CLI シェル
 - `test/src/cmd/sqliteTest/` : 動作テスト
 - `test/src/libsqlite3Test/mockSqlite3Test/` : SQLite API モックの動作テスト
-- `test/src/libsqlite3Test/exportTest/` : 公開関数のモック対象漏れを検出するテスト
+- `test/src/libsqlite3Test/exportTest/` : API 表、公開変数、Windows 固有シンボル、IDENT manifest、実ライブラリの全エクスポートが一致することを検出するテスト
 
 ## SQLite API モック
 
@@ -109,7 +109,7 @@ EXPECT_CALL(mock_sqlite3, sqlite3_open(StrEq(":memory:"), _))
 `mock_sqlite3` はこれらの変数を定義するので、実ライブラリなしでもリンクできます。  
 `sqlite3_version` の初期値は `SQLITE_VERSION` です。`sqlite3_temp_directory` と `sqlite3_data_directory` の初期値は `NULL` です。
 
-`exportTest` は公開ヘッダー `sqlite3.h` に載る関数だけを検査します。  
-Windows の DLL には `sqlite3.h` に無い `sqlite3_win32_*` が追加で出ますが、これらは検査対象外です。
+`exportTest` は、公開ヘッダー `sqlite3.h` に載る関数と公開変数を検査します。  
+Windows の DLL に追加される `sqlite3.h` に無い `sqlite3_win32_*` と IDENT manifest も期待値へ明示し、実ライブラリの全エクスポートと比較します。
 
 `sqlite3ext.h` の拡張 API 表はモック対象外です。
