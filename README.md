@@ -8,7 +8,7 @@ c-modernization-kit のワークスペース内 (`framework/makefw` 等と組み
 ## 概要
 
 [SQLite](https://www.sqlite.org/) の amalgamation (単一ファイルにまとめられたソース配布形式。`sqlite3.c` / `sqlite3.h` / `sqlite3ext.h`) および公式 CLI シェル (`shell.c`) を、c-modernization-kit の makefw 規約に沿って取り込んだラッパー ライブラリです。  
-SQLite 自体のソースは改変せず、リリース アーカイブをそのまま展開して利用します。
+SQLite のリリース アーカイブを展開し、本体への変更は [パッチ](patches/README.md) 経由で適用します。
 
 SQLite を利用するプログラムの単体テスト向けに、Google Mock 対応の SQLite API モックも含みます。
 
