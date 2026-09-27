@@ -35,11 +35,11 @@ SQLite を利用するプログラムの単体テスト向けに、Google Mock �
      https://www.sqlite.org/2024/sqlite-amalgamation-3460100.zip
    ```
 
-配置後、`make` (または `make test`) を実行すると、`app/sqlite/bin/extract_package.py` が自動的に `prod/include/`、`prod/libsrc/sqlite3/`、`prod/src/cmd/sqlite3/` へ展開します。  
+配置後、`make` (または `make test`) を実行すると、`app/sqlite/bin_internal/extract_package.py` が自動的に `prod/include/`、`prod/libsrc/sqlite3/`、`prod/src/cmd/sqlite3/` へ展開します。  
 展開先はいずれも生成物であり `.gitignore` 対象です。
 
 展開に続けて、`app/sqlite/patches/` の unified diff を自動的に適用します。  
-適用器は `framework/makefw/bin/apply_patches.py` (app 間で共有する適用器) です。  
+適用器は `framework/makefw/bin_internal/apply_patches.py` (app 間で共有する適用器) です。  
 sqlite3 本体への変更はすべてこのパッチ経由で行い、展開直後のファイルを直接編集することはありません。  
 パッチの一覧と個々の目的は [patches/README.md](patches/README.md) を参照してください。
 
@@ -58,7 +58,7 @@ sqlite3 本体への変更はすべてこのパッチ経由で行い、展開直
 
 SQLite 本体は Public Domain です。単体の `LICENSE` ファイルはアーカイブ内に同梱されておらず、 `sqlite3.h` 冒頭のコメントに著作権放棄の宣言 (blessing) が記載されています。詳細は [https://www.sqlite.org/copyright.html](https://www.sqlite.org/copyright.html) を参照してください。
 
-`app/sqlite` 直下の `LICENSE` (MIT License) は、本ディレクトリのラッパー コード (`bin/extract_package.py`、`makefile`/`makepart.mk` 等の手書きファイル) に対する著作権表示であり、`sqlite3.c`/`sqlite3.h`/`shell.c` 等の SQLite 本体には適用されません。
+`app/sqlite` 直下の `LICENSE` (MIT License) は、本ディレクトリのラッパー コード (`bin_internal/extract_package.py`、`makefile`/`makepart.mk` 等の手書きファイル) に対する著作権表示であり、`sqlite3.c`/`sqlite3.h`/`shell.c` 等の SQLite 本体には適用されません。
 
 ## サンプルとテスト
 
