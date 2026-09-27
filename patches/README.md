@@ -27,6 +27,8 @@ sqlite3 本体へ手を入れる唯一の方法は、このディレクトリへ
 |---|---|---|
 | `0001-windows-dll-api-macro.patch` | `prod/include/sqlite3.h`、`prod/libsrc/sqlite3/sqlite3.c` | `SQLITE_API` が未定義のとき、Windows では利用側 (ヘッダー) を DLL import、ビルド側 (ソース) を DLL export の既定にする。GCC 系では可視性を `default` にする。 |
 
+Table: 収録パッチの一覧と適用対象および目的
+
 `0001` はヘッダーとソースの双方に、同一目的 (Windows での DLL import/export 既定値の付与) を適用する変更のため、1 本のパッチにまとめています。  
 両ファイルとも変更はファイル先頭への挿入のみで、対象ファイルとインクルード方向 (import/export) が対になっているため、分割しても関連性を追いにくくなるだけで独立した更新単位にはなりません。
 
