@@ -13,9 +13,14 @@
 # を適用する framework/makefw/bin_internal/apply_patches.py を extract_package.py が
 # import するために必要。
 
+# 同じ make 実行内の子 make では確認済みの app ディレクトリを SQLITE_EXTRACT_DONE で引き継ぎ、
+# Python の起動を 1 回に抑える (理由は app/cjson/makepart.mk を参照)。
 ifndef MAKEFW_SYNC_EVAL
-    _SQLITE_EXTRACT_STATUS := $(shell python3 "$(MYAPP_DIR)/bin_internal/extract_package.py" --app-dir "$(MYAPP_DIR)" --makefw-home "$(MAKEFW_HOME)" >&2; echo $$?)
-    ifneq ($(_SQLITE_EXTRACT_STATUS),0)
-        $(error sqlite amalgamation パッケージの準備に失敗しました。上記のメッセージに従って app/sqlite/packages にアーカイブを配置してください)
+    ifneq ($(SQLITE_EXTRACT_DONE),$(MYAPP_DIR))
+        _SQLITE_EXTRACT_STATUS := $(shell python3 "$(MYAPP_DIR)/bin_internal/extract_package.py" --app-dir "$(MYAPP_DIR)" --makefw-home "$(MAKEFW_HOME)" >&2; echo $$?)
+        ifneq ($(_SQLITE_EXTRACT_STATUS),0)
+            $(error sqlite amalgamation パッケージの準備に失敗しました。上記のメッセージに従って app/sqlite/packages にアーカイブを配置してください)
+        endif
+        export SQLITE_EXTRACT_DONE := $(MYAPP_DIR)
     endif
 endif
