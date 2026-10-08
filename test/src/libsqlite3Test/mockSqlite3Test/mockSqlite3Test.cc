@@ -6,7 +6,7 @@
 TEST(mockSqlite3Test, delegates_to_real_without_mock)
 {
     // Arrange
-    sqlite3 *database = nullptr;
+    sqlite3 *database = nullptr; // [状態] - データベース ハンドル変数を初期化する。
 
     // Pre-Assert
 
@@ -26,8 +26,8 @@ TEST(mockSqlite3Test, delegates_to_real_without_mock)
 TEST(mockSqlite3Test, delegates_to_real_with_default_action)
 {
     // Arrange
-    NiceMock<Mock_sqlite3> mock_sqlite3;
-    sqlite3 *database = nullptr;
+    NiceMock<Mock_sqlite3> mock_sqlite3; // [状態] - 既定動作の Mock_sqlite3 を生成する。
+    sqlite3 *database = nullptr;         // [状態] - データベース ハンドル変数を初期化する。
 
     // Pre-Assert
 
@@ -47,8 +47,8 @@ TEST(mockSqlite3Test, delegates_to_real_with_default_action)
 TEST(mockSqlite3Test, overrides_result)
 {
     // Arrange
-    NiceMock<Mock_sqlite3> mock_sqlite3;
-    sqlite3 *database = nullptr;
+    NiceMock<Mock_sqlite3> mock_sqlite3; // [状態] - 既定動作の Mock_sqlite3 を生成する。
+    sqlite3 *database = nullptr;         // [状態] - データベース ハンドル変数を初期化する。
 
     // Pre-Assert
     EXPECT_CALL(mock_sqlite3, sqlite3_open(StrEq(":memory:"), &database))
@@ -68,7 +68,7 @@ TEST(mockSqlite3Test, overrides_result)
 TEST(mockSqlite3Test, delegates_variadic_format_to_real)
 {
     // Arrange
-    NiceMock<Mock_sqlite3> mock_sqlite3;
+    NiceMock<Mock_sqlite3> mock_sqlite3; // [状態] - 既定動作の Mock_sqlite3 を生成する。
 
     // Pre-Assert
 
@@ -87,7 +87,7 @@ TEST(mockSqlite3Test, delegates_variadic_format_to_real)
 TEST(mockSqlite3Test, overrides_variadic_config_result)
 {
     // Arrange
-    NiceMock<Mock_sqlite3> mock_sqlite3;
+    NiceMock<Mock_sqlite3> mock_sqlite3; // [状態] - 既定動作の Mock_sqlite3 を生成する。
 
     // Pre-Assert
     EXPECT_CALL(mock_sqlite3, sqlite3_config(SQLITE_CONFIG_MEMSTATUS, _))
@@ -107,9 +107,9 @@ TEST(mockSqlite3Test, overrides_variadic_config_result)
 TEST(mockSqlite3Test, isolates_open_exec_close_without_real_database)
 {
     // Arrange
-    NiceMock<Mock_sqlite3> mock_sqlite3;
-    sqlite3 *fake_database = reinterpret_cast<sqlite3 *>(1);
-    sqlite3 *database = nullptr;
+    NiceMock<Mock_sqlite3> mock_sqlite3;                  // [状態] - 既定動作の Mock_sqlite3 を生成する。
+    sqlite3 *fake_database = reinterpret_cast<sqlite3 *>(1); // [状態] - モックの出力とするダミーの sqlite3 ポインターを用意する。
+    sqlite3 *database = nullptr;                          // [状態] - データベース ハンドル変数を初期化する。
 
     // Pre-Assert
     EXPECT_CALL(mock_sqlite3, sqlite3_open(StrEq(":memory:"), _))
