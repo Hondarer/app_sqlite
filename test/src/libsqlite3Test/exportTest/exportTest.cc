@@ -94,5 +94,5 @@ TEST(exportTest, sqlite3_symbols_match_api_table)
 
     // Assert
     testing::expectExportNamesMatch(expected,
-                                    actual); // [確認_正常系] - libsqlite3 のエクスポートに不足や想定外がないこと。
+                                    actual); // [確認_正常系 回数=2] - libsqlite3 のエクスポートに不足や想定外がないこと。
 }
