@@ -93,6 +93,7 @@ TEST(exportTest, sqlite3_symbols_match_api_table)
         testing::getActualExportNames(path); // [手順] - libsqlite3 のエクスポート名を取得する。
 
     // Assert
+    // [サブ手順参照 名前=testing.expectExportNamesMatch]
     testing::expectExportNamesMatch(expected,
-                                    actual); // [確認_正常系 回数=2] - libsqlite3 のエクスポートに不足や想定外がないこと。
+                                    actual); // libsqlite3 のエクスポートに不足や想定外がないこと。
 }
