@@ -45,7 +45,7 @@ class Mock_sqlite3
     MOCK_METHOD(int, sqlite3_vtab_config, (sqlite3 *, int, va_list));
 
     Mock_sqlite3();
-    ~Mock_sqlite3();
+    virtual ~Mock_sqlite3();
 };
 
 extern Mock_sqlite3 *_mock_sqlite3;
