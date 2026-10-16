@@ -23,14 +23,14 @@ TEST_F(sqliteTest, exec_create_insert_select_roundtrip)
 
     // Act_2
     int create_rc = sqlite3_exec(db, "CREATE TABLE t (id INTEGER, name TEXT)", nullptr, nullptr,
-                                 nullptr); // [手順] - CREATE TABLE 文を sqlite3_exec で実行する。
+                                 nullptr); // [手順] - CREATE TABLE 文を sqlite3_exec() で実行する。
     // Assert_2
     ASSERT_EQ(SQLITE_OK,
               create_rc); // [確認_正常系] - CREATE TABLE 実行時の sqlite3_exec() の戻り値が SQLITE_OK であること。
 
     // Act_3
     int insert_rc = sqlite3_exec(db, "INSERT INTO t (id, name) VALUES (1, 'sqlite')", nullptr, nullptr,
-                                 nullptr); // [手順] - INSERT 文を sqlite3_exec で実行する。
+                                 nullptr); // [手順] - INSERT 文を sqlite3_exec() で実行する。
 
     // Assert_3
     ASSERT_EQ(SQLITE_OK, insert_rc); // [確認_正常系] - INSERT 実行時の sqlite3_exec() の戻り値が SQLITE_OK であること。
@@ -38,7 +38,7 @@ TEST_F(sqliteTest, exec_create_insert_select_roundtrip)
     // Act_4
     sqlite3_stmt *stmt = nullptr;
     int prepare_rc = sqlite3_prepare_v2(db, "SELECT id, name FROM t", -1, &stmt,
-                                        nullptr); // [手順] - SELECT 文を sqlite3_prepare_v2 でコンパイルする。
+                                        nullptr); // [手順] - SELECT 文を sqlite3_prepare_v2() でコンパイルする。
     ASSERT_EQ(SQLITE_OK, prepare_rc); // [確認_正常系] - sqlite3_prepare_v2() の戻り値が SQLITE_OK であること。
     int step_rc = sqlite3_step(stmt); // [手順] - sqlite3_step(stmt) で 1 行目を取得する。
     ASSERT_EQ(SQLITE_ROW, step_rc);   // [確認_正常系] - sqlite3_step() の戻り値が SQLITE_ROW であること。
@@ -69,7 +69,7 @@ TEST_F(sqliteTest, exec_invalid_sql_returns_error)
 
     // Act
     int rc = sqlite3_exec(db, "SELEKT * FROM nothing", nullptr, nullptr,
-                          &errmsg); // [手順] - 構文が誤った SQL 文を sqlite3_exec に渡す。
+                          &errmsg); // [手順] - 構文が誤った SQL 文を sqlite3_exec() に渡す。
 
     // Assert
     EXPECT_NE(SQLITE_OK, rc);   // [確認_異常系] - sqlite3_exec() の戻り値が SQLITE_OK 以外であること。
@@ -96,7 +96,7 @@ TEST_F(sqliteTest, prepared_statement_bind_int_and_text)
     sqlite3_bind_int(stmt, 1, 42); // [手順] - 1 番目のプレースホルダーへ整数値 42 をバインドする。
     sqlite3_bind_text(stmt, 2, "bound", -1,
                       SQLITE_STATIC); // [手順] - 2 番目のプレースホルダーへ文字列 "bound" をバインドする。
-    int step_rc = sqlite3_step(stmt); // [手順] - バインド済みの sqlite3_stmt を sqlite3_step で実行する。
+    int step_rc = sqlite3_step(stmt); // [手順] - バインド済みの sqlite3_stmt を sqlite3_step() で実行する。
 
     // Assert
     EXPECT_EQ(SQLITE_DONE,
@@ -105,7 +105,7 @@ TEST_F(sqliteTest, prepared_statement_bind_int_and_text)
     // Act_2
     sqlite3_stmt *select_stmt = nullptr;
     sqlite3_prepare_v2(db, "SELECT id, name FROM t", -1, &select_stmt, nullptr);
-    int select_step_rc = sqlite3_step(select_stmt); // [手順] - SELECT 文の sqlite3_stmt を sqlite3_step で実行する。
+    int select_step_rc = sqlite3_step(select_stmt); // [手順] - SELECT 文の sqlite3_stmt を sqlite3_step() で実行する。
     ASSERT_EQ(SQLITE_ROW,
               select_step_rc); // [確認_正常系] - SELECT 実行時の sqlite3_step() の戻り値が SQLITE_ROW であること。
     int actual_ret_bound_id = sqlite3_column_int(select_stmt, 0);                     // [手順] - id 列を読み出す。
