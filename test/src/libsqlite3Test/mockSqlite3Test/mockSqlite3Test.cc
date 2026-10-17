@@ -2,7 +2,7 @@
 
 #include <mock_sqlite3.h>
 
-// Mock_sqlite3 を生成しない場合に SQLite の実関数へ委譲されることの確認
+// Mock_sqlite3 を生成しない場合に SQLite の処理へ委譲されることの確認
 TEST(mockSqlite3Test, delegates_to_real_without_mock)
 {
     // Arrange
@@ -11,8 +11,8 @@ TEST(mockSqlite3Test, delegates_to_real_without_mock)
     // Pre-Assert
 
     // Act
-    int return_value =
-        sqlite3_open(":memory:", &database); // [手順] - Mock_sqlite3 を生成せず sqlite3_open() を呼び出す。
+    int return_value = sqlite3_open(
+        ":memory:", &database); // [手順] - Mock_sqlite3 を生成せず ":memory:" を指定して sqlite3_open() を呼び出す。
 
     // Assert
     EXPECT_EQ(SQLITE_OK, return_value); // [確認_正常系] - sqlite3_open() の戻り値が SQLITE_OK であること。
@@ -22,7 +22,7 @@ TEST(mockSqlite3Test, delegates_to_real_without_mock)
     sqlite3_close(database);
 }
 
-// 注入済み Mock_sqlite3 の未設定呼び出しが SQLite の実関数へ委譲されることの確認
+// 注入済み Mock_sqlite3 の未設定呼び出しが SQLite の処理へ委譲されることの確認
 TEST(mockSqlite3Test, delegates_to_real_with_default_action)
 {
     // Arrange
@@ -32,8 +32,9 @@ TEST(mockSqlite3Test, delegates_to_real_with_default_action)
     // Pre-Assert
 
     // Act
-    int return_value =
-        sqlite3_open(":memory:", &database); // [手順] - 既定動作の Mock_sqlite3 を介して sqlite3_open() を呼び出す。
+    int return_value = sqlite3_open(
+        ":memory:",
+        &database); // [手順] - 既定動作の Mock_sqlite3 を介して ":memory:" を指定して sqlite3_open() を呼び出す。
 
     // Assert
     EXPECT_EQ(SQLITE_OK, return_value); // [確認_正常系] - sqlite3_open() の戻り値が SQLITE_OK であること。
@@ -54,17 +55,18 @@ TEST(mockSqlite3Test, overrides_result)
     EXPECT_CALL(mock_sqlite3, sqlite3_open(StrEq(":memory:"), &database))
         .WillOnce(Return(
             SQLITE_CANTOPEN)); // [Pre-Assert確認_異常系] - sqlite3_open() が ":memory:" と等しい文字列、&database を指定して 1 回呼び出されること。
-    // [Pre-Assert手順] - sqlite3_open() から SQLITE_CANTOPEN を返却する。
+    // [Pre-Assert手順] - sqlite3_open() から SQLITE_CANTOPEN を返す。
 
     // Act
     int return_value = sqlite3_open(
-        ":memory:", &database); // [手順] - 戻り値を設定した Mock_sqlite3 を介して sqlite3_open() を呼び出す。
+        ":memory:",
+        &database); // [手順] - 戻り値を設定した Mock_sqlite3 を介して ":memory:" を指定して sqlite3_open() を呼び出す。
 
     // Assert
     EXPECT_EQ(SQLITE_CANTOPEN, return_value); // [確認_異常系] - sqlite3_open() の戻り値が SQLITE_CANTOPEN であること。
 }
 
-// 可変長引数を受け取る sqlite3_mprintf の既定動作が実関数へ委譲されることの確認
+// 可変長引数を受け取る sqlite3_mprintf の既定動作が SQLite の処理へ委譲されることの確認
 TEST(mockSqlite3Test, delegates_variadic_format_to_real)
 {
     // Arrange
@@ -94,12 +96,12 @@ TEST(mockSqlite3Test, overrides_variadic_config_result)
     EXPECT_CALL(mock_sqlite3, sqlite3_config(SQLITE_CONFIG_MEMSTATUS, _))
         .WillOnce(Return(
             SQLITE_BUSY)); // [Pre-Assert確認_異常系] - sqlite3_config() が SQLITE_CONFIG_MEMSTATUS を指定して 1 回呼び出されること。
-                           // [Pre-Assert手順] - sqlite3_config() から SQLITE_BUSY を返却する。
+                           // [Pre-Assert手順] - sqlite3_config() から SQLITE_BUSY を返す。
 
     // Act
-    int return_value =
-        sqlite3_config(SQLITE_CONFIG_MEMSTATUS,
-                       0); // [手順] - 戻り値を設定した Mock_sqlite3 を介して sqlite3_config() を呼び出す。
+    int return_value = sqlite3_config(
+        SQLITE_CONFIG_MEMSTATUS,
+        0); // [手順] - 戻り値を設定した Mock_sqlite3 を介して SQLITE_CONFIG_MEMSTATUS を指定して sqlite3_config() を呼び出す。
 
     // Assert
     EXPECT_EQ(SQLITE_BUSY, return_value); // [確認_異常系] - sqlite3_config() の戻り値が SQLITE_BUSY であること。
@@ -117,21 +119,21 @@ TEST(mockSqlite3Test, isolates_open_exec_close_without_real_database)
     EXPECT_CALL(mock_sqlite3, sqlite3_open(StrEq(":memory:"), _))
         .WillOnce(DoAll(SetArgPointee<1>(fake_database), Return(SQLITE_OK)));
     // [Pre-Assert確認_正常系] - sqlite3_open() が ":memory:" と等しい文字列を指定して 1 回呼び出されること。
-    // [Pre-Assert手順] - sqlite3_open() の出力引数に fake_database を設定し、SQLITE_OK を返却する。
+    // [Pre-Assert手順] - sqlite3_open() から、出力引数に fake_database を設定して SQLITE_OK を返す。
     EXPECT_CALL(mock_sqlite3, sqlite3_exec(fake_database, StrEq("SELECT 1;"), nullptr, nullptr, nullptr))
         .WillOnce(Return(
             SQLITE_OK)); // [Pre-Assert確認_正常系] - sqlite3_exec() が fake_database、"SELECT 1;" と等しい文字列、nullptr、nullptr、nullptr を指定して 1 回呼び出されること。
-                         // [Pre-Assert手順] - sqlite3_exec() から SQLITE_OK を返却する。
+                         // [Pre-Assert手順] - sqlite3_exec() から SQLITE_OK を返す。
     EXPECT_CALL(mock_sqlite3, sqlite3_close(fake_database))
         .WillOnce(Return(
             SQLITE_OK)); // [Pre-Assert確認_正常系] - sqlite3_close() が fake_database を指定して 1 回呼び出されること。
-                         // [Pre-Assert手順] - sqlite3_close() から SQLITE_OK を返却する。
+                         // [Pre-Assert手順] - sqlite3_close() から SQLITE_OK を返す。
 
     // Act
-    int open_result = sqlite3_open(":memory:", &database); // [手順] - sqlite3_open() でインメモリ DB を開く。
+    int open_result = sqlite3_open(":memory:", &database); // [手順] - ":memory:" を指定して sqlite3_open() を呼び出す。
     int exec_result = sqlite3_exec(database, "SELECT 1;", nullptr, nullptr,
-                                   nullptr);    // [手順] - sqlite3_exec() で SELECT 1; を実行する。
-    int close_result = sqlite3_close(database); // [手順] - sqlite3_close() で DB を閉じる。
+                                   nullptr);    // [手順] - "SELECT 1;" を指定して sqlite3_exec() を呼び出す。
+    int close_result = sqlite3_close(database); // [手順] - database を指定して sqlite3_close() を呼び出す。
 
     // Assert
     EXPECT_EQ(SQLITE_OK, open_result);  // [確認_正常系] - sqlite3_open() の戻り値が SQLITE_OK であること。
