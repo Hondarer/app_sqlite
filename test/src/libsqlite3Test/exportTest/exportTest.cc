@@ -69,7 +69,7 @@ static const char *const kUnofficialWin32ExportNames[] = {
 };
 #endif /* PLATFORM_WINDOWS */
 
-// libsqlite3 の期待シンボルと実ライブラリの全エクスポートが一致することの確認
+// libsqlite3_app の期待シンボルと実ライブラリの全エクスポートが一致することの確認
 TEST(exportTest, sqlite3_symbols_match_api_table)
 {
     // Arrange
@@ -81,10 +81,10 @@ TEST(exportTest, sqlite3_symbols_match_api_table)
         std::begin(kUnofficialWin32ExportNames),
         std::end(kUnofficialWin32ExportNames)); // [状態] - sqlite3.h に無い Windows 固有シンボルを期待値へ追加する。
     expected.insert(testing::identManifestSymbolName(
-        "libsqlite3" TESTFW_SHARED_LIBRARY_EXTENSION)); // [状態] - IDENT manifest シンボル名を期待値へ追加する。
+        "libsqlite3_app" TESTFW_SHARED_LIBRARY_EXTENSION)); // [状態] - IDENT manifest シンボル名を期待値へ追加する。
 #endif                                                  /* PLATFORM_WINDOWS */
-    std::string path = findWorkspaceRoot() + "/app/sqlite/prod/lib/libsqlite3" +
-                       TESTFW_SHARED_LIBRARY_EXTENSION; // [状態] - 検査対象を libsqlite3 の動的ライブラリとする。
+    std::string path = findWorkspaceRoot() + "/app/sqlite/prod/lib/libsqlite3_app" +
+                       TESTFW_SHARED_LIBRARY_EXTENSION; // [状態] - 検査対象を libsqlite3_app の動的ライブラリとする。
 
     // Pre-Assert
 
@@ -95,5 +95,5 @@ TEST(exportTest, sqlite3_symbols_match_api_table)
     // Assert
     // [サブ手順参照 名前=testing.expectExportNamesMatch]
     testing::expectExportNamesMatch(expected,
-                                    actual); // libsqlite3 のエクスポートに不足や想定外がないこと。
+                                    actual); // libsqlite3_app のエクスポートに不足や想定外がないこと。
 }

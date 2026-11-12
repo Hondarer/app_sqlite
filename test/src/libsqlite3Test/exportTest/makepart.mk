@@ -1,5 +1,5 @@
 # ライブラリ全体の公開シンボルを検査する黒箱テストのため、TEST_SRCS は指定しない。
-LIBS += sqlite3
+LIBS += sqlite3_app
 
 ifdef PLATFORM_LINUX
     DEFINES += PLATFORM_LINUX

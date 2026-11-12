@@ -15,7 +15,7 @@ ifdef PLATFORM_WINDOWS
     CXXFLAGS += /wd4200
 endif
 
-LIBS += sqlite3
+LIBS += sqlite3_app
 
 ifdef PLATFORM_LINUX
     # sqlite3.c の拡張ロード機能 (dlopen 等) を利用するため libdl が必要

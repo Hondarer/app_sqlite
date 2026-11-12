@@ -14,10 +14,10 @@ SQLite を利用するプログラムの単体テスト向けに、Google Mock �
 
 ビルド成果物は動的ライブラリと、`shell.c` から生成する `sqlite3` コマンド (公式 CLI) です。
 
-- Linux: `libsqlite3.so`
-- Windows: `libsqlite3.dll` およびリンク用の import library `libsqlite3.lib`
+- Linux: `libsqlite3_app.so`
+- Windows: `libsqlite3_app.dll` およびリンク用の import library `libsqlite3_app.lib`
 
-静的ライブラリ (`libsqlite3.a` および静的リンク用の `libsqlite3.lib`) は生成しません。
+静的ライブラリは生成しません。
 
 `sqlite3` コマンドは行編集オプション (`-DHAVE_READLINE` 等) を付与しない最小構成でビルドしており、`readline`/`editline` 等の外部ライブラリには依存しません。
 
@@ -70,8 +70,8 @@ SQLite 本体は Public Domain です。単体の `LICENSE` ファイルはア�
 ## SQLite API モック
 
 SQLite を利用するアプリの単体テストでは、`<mock_sqlite3.h>` と `libmock_sqlite3` を使用できます。  
-テスト対象の `makepart.mk` では、`sqlite3` の代わりに `mock_sqlite3` をリンクします。  
-`sqlite3` と `mock_sqlite3` を同時にリンクしないでください。Linux では実ライブラリの強シンボルが弱定義のモックを上書きし、`EXPECT_CALL` が効かなくなります。
+テスト対象の `makepart.mk` では、`sqlite3_app` の代わりに `mock_sqlite3` をリンクします。  
+`sqlite3_app` と `mock_sqlite3` を同時にリンクしないでください。Linux では実ライブラリの強シンボルが弱定義のモックを上書きし、`EXPECT_CALL` が効かなくなります。
 
 ```makefile
 ifdef PLATFORM_WINDOWS
@@ -83,7 +83,7 @@ LIBS += mock_sqlite3
 
 Windows では、`SQLITE_API=` により SQLite の DLL import 宣言を無効にし、`mock_sqlite3` が提供する実シンボルを参照します。  
 `Mock_sqlite3` を生成しない場合と、生成後に `EXPECT_CALL` や `ON_CALL` を設定しない場合は、動的ライブラリの実関数を呼び出します。  
-実関数への委譲では、Linux の `LD_LIBRARY_PATH` または Windows の `PATH` から `libsqlite3` を読み込みます。
+実関数への委譲では、Linux の `LD_LIBRARY_PATH` または Windows の `PATH` から `libsqlite3_app` を読み込みます。
 
 振る舞いを変更するテストでは、`Mock_sqlite3` を生成して `EXPECT_CALL` または `ON_CALL` を指定します。
 
