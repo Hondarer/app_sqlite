@@ -4,3 +4,6 @@ ifdef PLATFORM_WINDOWS
 endif
 
 LIBS += mock_sqlite3
+DEFINES += MOCK_SQLITE3_ENABLE_CALLER
+TEST_SRCS += $(MYAPP_DIR)/test/src/libsqlite3Test/mockSqlite3Test/caller_info.c \
+    $(MYAPP_DIR)/test/src/libsqlite3Test/mockSqlite3Test/caller_info_cpp.cc

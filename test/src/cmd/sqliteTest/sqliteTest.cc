@@ -15,48 +15,48 @@ TEST_F(sqliteTest, exec_create_insert_select_roundtrip)
     // Pre-Assert
 
     // Act
-    int open_rc = sqlite3_open(":memory:", &db); // [手順] - ":memory:" を指定して sqlite3_open() を呼び出す。
+    int open_rc = sqlite3_app_sqlite3_open(":memory:", &db); // [手順] - ":memory:" を指定して sqlite3_app_sqlite3_open() を呼び出す。
 
     // Assert
-    ASSERT_EQ(SQLITE_OK, open_rc); // [確認_正常系] - sqlite3_open() の戻り値が SQLITE_OK であること。
+    ASSERT_EQ(SQLITE_OK, open_rc); // [確認_正常系] - sqlite3_app_sqlite3_open() の戻り値が SQLITE_OK であること。
     ASSERT_NE(nullptr, db);        // [確認_正常系] - db が nullptr 以外であること。
 
     // Act_2
-    int create_rc = sqlite3_exec(db, "CREATE TABLE t (id INTEGER, name TEXT)", nullptr, nullptr,
-                                 nullptr); // [手順] - CREATE TABLE 文を指定して sqlite3_exec() を呼び出す。
+    int create_rc = sqlite3_app_sqlite3_exec(db, "CREATE TABLE t (id INTEGER, name TEXT)", nullptr, nullptr,
+                                 nullptr); // [手順] - CREATE TABLE 文を指定して sqlite3_app_sqlite3_exec() を呼び出す。
     // Assert_2
     ASSERT_EQ(SQLITE_OK,
-              create_rc); // [確認_正常系] - CREATE TABLE 実行時の sqlite3_exec() の戻り値が SQLITE_OK であること。
+              create_rc); // [確認_正常系] - CREATE TABLE 実行時の sqlite3_app_sqlite3_exec() の戻り値が SQLITE_OK であること。
 
     // Act_3
-    int insert_rc = sqlite3_exec(db, "INSERT INTO t (id, name) VALUES (1, 'sqlite')", nullptr, nullptr,
-                                 nullptr); // [手順] - INSERT 文を指定して sqlite3_exec() を呼び出す。
+    int insert_rc = sqlite3_app_sqlite3_exec(db, "INSERT INTO t (id, name) VALUES (1, 'sqlite')", nullptr, nullptr,
+                                 nullptr); // [手順] - INSERT 文を指定して sqlite3_app_sqlite3_exec() を呼び出す。
 
     // Assert_3
-    ASSERT_EQ(SQLITE_OK, insert_rc); // [確認_正常系] - INSERT 実行時の sqlite3_exec() の戻り値が SQLITE_OK であること。
+    ASSERT_EQ(SQLITE_OK, insert_rc); // [確認_正常系] - INSERT 実行時の sqlite3_app_sqlite3_exec() の戻り値が SQLITE_OK であること。
 
     // Act_4
     sqlite3_stmt *stmt = nullptr;
-    int prepare_rc = sqlite3_prepare_v2(db, "SELECT id, name FROM t", -1, &stmt,
-                                        nullptr); // [手順] - SELECT 文を指定して sqlite3_prepare_v2() を呼び出す。
-    ASSERT_EQ(SQLITE_OK, prepare_rc); // [確認_正常系] - sqlite3_prepare_v2() の戻り値が SQLITE_OK であること。
-    int step_rc = sqlite3_step(stmt); // [手順] - 1 行目を取得するため、stmt を指定して sqlite3_step() を呼び出す。
-    ASSERT_EQ(SQLITE_ROW, step_rc);   // [確認_正常系] - sqlite3_step() の戻り値が SQLITE_ROW であること。
+    int prepare_rc = sqlite3_app_sqlite3_prepare_v2(db, "SELECT id, name FROM t", -1, &stmt,
+                                        nullptr); // [手順] - SELECT 文を指定して sqlite3_app_sqlite3_prepare_v2() を呼び出す。
+    ASSERT_EQ(SQLITE_OK, prepare_rc); // [確認_正常系] - sqlite3_app_sqlite3_prepare_v2() の戻り値が SQLITE_OK であること。
+    int step_rc = sqlite3_app_sqlite3_step(stmt); // [手順] - 1 行目を取得するため、stmt を指定して sqlite3_app_sqlite3_step() を呼び出す。
+    ASSERT_EQ(SQLITE_ROW, step_rc);   // [確認_正常系] - sqlite3_app_sqlite3_step() の戻り値が SQLITE_ROW であること。
     int actual_ret_id =
-        sqlite3_column_int(stmt, 0); // [手順] - stmt と id 列の位置 0 を指定して sqlite3_column_int() を呼び出す。
+        sqlite3_app_sqlite3_column_int(stmt, 0); // [手順] - stmt と id 列の位置 0 を指定して sqlite3_app_sqlite3_column_int() を呼び出す。
     const unsigned char *actual_ret_name =
-        sqlite3_column_text(stmt, 1); // [手順] - stmt と name 列の位置 1 を指定して sqlite3_column_text() を呼び出す。
+        sqlite3_app_sqlite3_column_text(stmt, 1); // [手順] - stmt と name 列の位置 1 を指定して sqlite3_app_sqlite3_column_text() を呼び出す。
 
     // Assert_4
-    EXPECT_EQ(1, actual_ret_id); // [確認_正常系] - id 列に対する sqlite3_column_int() の戻り値が 1 であること。
+    EXPECT_EQ(1, actual_ret_id); // [確認_正常系] - id 列に対する sqlite3_app_sqlite3_column_int() の戻り値が 1 であること。
     EXPECT_STREQ(
         "sqlite",
         reinterpret_cast<const char *>(
-            actual_ret_name)); // [確認_正常系] - name 列に対する sqlite3_column_text() の戻り値が "sqlite" であること。
+            actual_ret_name)); // [確認_正常系] - name 列に対する sqlite3_app_sqlite3_column_text() の戻り値が "sqlite" であること。
 
     // Cleanup
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
+    sqlite3_app_sqlite3_finalize(stmt);
+    sqlite3_app_sqlite3_close(db);
 }
 
 // 不正な SQL がエラーを返すことの確認
@@ -64,22 +64,22 @@ TEST_F(sqliteTest, exec_invalid_sql_returns_error)
 {
     // Arrange
     sqlite3 *db = nullptr; // [状態] - インメモリ DB へ接続するためのハンドルを用意する。
-    sqlite3_open(":memory:", &db);
+    sqlite3_app_sqlite3_open(":memory:", &db);
     char *errmsg = nullptr;
 
     // Pre-Assert
 
     // Act
-    int rc = sqlite3_exec(db, "SELEKT * FROM nothing", nullptr, nullptr,
-                          &errmsg); // [手順] - 構文が誤った SQL 文を指定して sqlite3_exec() を呼び出す。
+    int rc = sqlite3_app_sqlite3_exec(db, "SELEKT * FROM nothing", nullptr, nullptr,
+                          &errmsg); // [手順] - 構文が誤った SQL 文を指定して sqlite3_app_sqlite3_exec() を呼び出す。
 
     // Assert
-    EXPECT_NE(SQLITE_OK, rc);   // [確認_異常系] - sqlite3_exec() の戻り値が SQLITE_OK 以外であること。
+    EXPECT_NE(SQLITE_OK, rc);   // [確認_異常系] - sqlite3_app_sqlite3_exec() の戻り値が SQLITE_OK 以外であること。
     EXPECT_NE(nullptr, errmsg); // [確認_異常系] - errmsg が nullptr 以外であること。
 
     // Cleanup
-    sqlite3_free(errmsg);
-    sqlite3_close(db);
+    sqlite3_app_sqlite3_free(errmsg);
+    sqlite3_app_sqlite3_close(db);
 }
 
 // 整数と文字列のバインドが反映されることの確認
@@ -87,46 +87,46 @@ TEST_F(sqliteTest, prepared_statement_bind_int_and_text)
 {
     // Arrange
     sqlite3 *db = nullptr; // [状態] - インメモリ DB へ接続し、バインド対象のテーブルを用意する。
-    sqlite3_open(":memory:", &db);
-    sqlite3_exec(db, "CREATE TABLE t (id INTEGER, name TEXT)", nullptr, nullptr, nullptr);
+    sqlite3_app_sqlite3_open(":memory:", &db);
+    sqlite3_app_sqlite3_exec(db, "CREATE TABLE t (id INTEGER, name TEXT)", nullptr, nullptr, nullptr);
     sqlite3_stmt *stmt = nullptr;
-    sqlite3_prepare_v2(db, "INSERT INTO t (id, name) VALUES (?, ?)", -1, &stmt, nullptr);
+    sqlite3_app_sqlite3_prepare_v2(db, "INSERT INTO t (id, name) VALUES (?, ?)", -1, &stmt, nullptr);
 
     // Pre-Assert
 
     // Act
-    sqlite3_bind_int(stmt, 1,
-                     42); // [手順] - 1 番目のプレースホルダーと整数値 42 を指定して sqlite3_bind_int() を呼び出す。
-    sqlite3_bind_text(
+    sqlite3_app_sqlite3_bind_int(stmt, 1,
+                     42); // [手順] - 1 番目のプレースホルダーと整数値 42 を指定して sqlite3_app_sqlite3_bind_int() を呼び出す。
+    sqlite3_app_sqlite3_bind_text(
         stmt, 2, "bound", -1,
-        SQLITE_STATIC); // [手順] - 2 番目のプレースホルダーと文字列 "bound" を指定して sqlite3_bind_text() を呼び出す。
-    int step_rc = sqlite3_step(stmt); // [手順] - バインド済みの stmt を指定して sqlite3_step() を呼び出す。
+        SQLITE_STATIC); // [手順] - 2 番目のプレースホルダーと文字列 "bound" を指定して sqlite3_app_sqlite3_bind_text() を呼び出す。
+    int step_rc = sqlite3_app_sqlite3_step(stmt); // [手順] - バインド済みの stmt を指定して sqlite3_app_sqlite3_step() を呼び出す。
 
     // Assert
     EXPECT_EQ(SQLITE_DONE,
-              step_rc); // [確認_正常系] - INSERT 実行時の sqlite3_step() の戻り値が SQLITE_DONE であること。
+              step_rc); // [確認_正常系] - INSERT 実行時の sqlite3_app_sqlite3_step() の戻り値が SQLITE_DONE であること。
 
     // Act_2
     sqlite3_stmt *select_stmt = nullptr;
-    sqlite3_prepare_v2(db, "SELECT id, name FROM t", -1, &select_stmt, nullptr);
+    sqlite3_app_sqlite3_prepare_v2(db, "SELECT id, name FROM t", -1, &select_stmt, nullptr);
     int select_step_rc =
-        sqlite3_step(select_stmt); // [手順] - SELECT 文の select_stmt を指定して sqlite3_step() を呼び出す。
+        sqlite3_app_sqlite3_step(select_stmt); // [手順] - SELECT 文の select_stmt を指定して sqlite3_app_sqlite3_step() を呼び出す。
     ASSERT_EQ(SQLITE_ROW,
-              select_step_rc); // [確認_正常系] - SELECT 実行時の sqlite3_step() の戻り値が SQLITE_ROW であること。
-    int actual_ret_bound_id = sqlite3_column_int(
-        select_stmt, 0); // [手順] - select_stmt と id 列の位置 0 を指定して sqlite3_column_int() を呼び出す。
-    const unsigned char *actual_ret_bound_name = sqlite3_column_text(
-        select_stmt, 1); // [手順] - select_stmt と name 列の位置 1 を指定して sqlite3_column_text() を呼び出す。
+              select_step_rc); // [確認_正常系] - SELECT 実行時の sqlite3_app_sqlite3_step() の戻り値が SQLITE_ROW であること。
+    int actual_ret_bound_id = sqlite3_app_sqlite3_column_int(
+        select_stmt, 0); // [手順] - select_stmt と id 列の位置 0 を指定して sqlite3_app_sqlite3_column_int() を呼び出す。
+    const unsigned char *actual_ret_bound_name = sqlite3_app_sqlite3_column_text(
+        select_stmt, 1); // [手順] - select_stmt と name 列の位置 1 を指定して sqlite3_app_sqlite3_column_text() を呼び出す。
 
     // Assert_2
-    EXPECT_EQ(42, actual_ret_bound_id); // [確認_正常系] - id 列に対する sqlite3_column_int() の戻り値が 42 であること。
+    EXPECT_EQ(42, actual_ret_bound_id); // [確認_正常系] - id 列に対する sqlite3_app_sqlite3_column_int() の戻り値が 42 であること。
     EXPECT_STREQ(
         "bound",
         reinterpret_cast<const char *>(
-            actual_ret_bound_name)); // [確認_正常系] - name 列に対する sqlite3_column_text() の戻り値が "bound" であること。
+            actual_ret_bound_name)); // [確認_正常系] - name 列に対する sqlite3_app_sqlite3_column_text() の戻り値が "bound" であること。
 
     // Cleanup
-    sqlite3_finalize(select_stmt);
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
+    sqlite3_app_sqlite3_finalize(select_stmt);
+    sqlite3_app_sqlite3_finalize(stmt);
+    sqlite3_app_sqlite3_close(db);
 }

@@ -3,46 +3,39 @@
 
 #include <sqlite3.h>
 #include <testfw.h>
+#include <mock_sqlite3_overrides.h>
 
 #include <cstdarg>
 
 inline constexpr char kLibSqlite3Name[] = "libsqlite3_app" TESTFW_SHARED_LIBRARY_EXTENSION;
 
-#define MOCK_SQLITE3_RET(return_type, name, parameters, arguments, matchers) \
-    extern return_type delegate_real_##name parameters;
-#define MOCK_SQLITE3_VOID(return_type, name, parameters, arguments, matchers) \
-    extern return_type delegate_real_##name parameters;
+#define MOCK_SQLITE3_RET(return_type, original_name, api_name, parameters, arguments, mock_parameters, mock_arguments, matchers) \
+    extern return_type delegate_real_##api_name mock_parameters;
+#define MOCK_SQLITE3_VOID(return_type, original_name, api_name, parameters, arguments, mock_parameters, mock_arguments, matchers) \
+    extern return_type delegate_real_##api_name mock_parameters;
 #include <mock_sqlite3_api_table.h>
 #undef MOCK_SQLITE3_VOID
 #undef MOCK_SQLITE3_RET
 
-extern int delegate_real_sqlite3_config(int operation, va_list args);
-extern int delegate_real_sqlite3_db_config(sqlite3 *database, int operation, va_list args);
-extern char *delegate_real_sqlite3_mprintf(const char *format, va_list args);
-extern char *delegate_real_sqlite3_snprintf(int size, char *buffer, const char *format, va_list args);
-extern void delegate_real_sqlite3_str_appendf(sqlite3_str *string, const char *format, va_list args);
-extern void delegate_real_sqlite3_log(int error_code, const char *format, va_list args);
-extern int delegate_real_sqlite3_test_control(int operation, va_list args);
-extern int delegate_real_sqlite3_vtab_config(sqlite3 *database, int operation, va_list args);
+#define MOCK_VARIADIC(return_type, original_name, api_name, parameters, arguments, mock_parameters, mock_arguments) \
+    extern return_type delegate_real_##api_name mock_parameters;
+#include <mock_sqlite3_variadic_api_table.h>
+#undef MOCK_VARIADIC
 
 class Mock_sqlite3
 {
   public:
-#define MOCK_SQLITE3_RET(return_type, name, parameters, arguments, matchers) MOCK_METHOD(return_type, name, parameters);
-#define MOCK_SQLITE3_VOID(return_type, name, parameters, arguments, matchers) \
-    MOCK_METHOD(return_type, name, parameters);
+#define MOCK_SQLITE3_RET(return_type, original_name, api_name, parameters, arguments, mock_parameters, mock_arguments, matchers) MOCK_METHOD(return_type, api_name, mock_parameters);
+#define MOCK_SQLITE3_VOID(return_type, original_name, api_name, parameters, arguments, mock_parameters, mock_arguments, matchers) \
+    MOCK_METHOD(return_type, api_name, mock_parameters);
 #include <mock_sqlite3_api_table.h>
 #undef MOCK_SQLITE3_VOID
 #undef MOCK_SQLITE3_RET
 
-    MOCK_METHOD(int, sqlite3_config, (int, va_list));
-    MOCK_METHOD(int, sqlite3_db_config, (sqlite3 *, int, va_list));
-    MOCK_METHOD(char *, sqlite3_mprintf, (const char *, va_list));
-    MOCK_METHOD(char *, sqlite3_snprintf, (int, char *, const char *, va_list));
-    MOCK_METHOD(void, sqlite3_str_appendf, (sqlite3_str *, const char *, va_list));
-    MOCK_METHOD(void, sqlite3_log, (int, const char *, va_list));
-    MOCK_METHOD(int, sqlite3_test_control, (int, va_list));
-    MOCK_METHOD(int, sqlite3_vtab_config, (sqlite3 *, int, va_list));
+#define MOCK_VARIADIC(return_type, original_name, api_name, parameters, arguments, mock_parameters, mock_arguments) \
+    MOCK_METHOD(return_type, api_name, mock_parameters);
+#include <mock_sqlite3_variadic_api_table.h>
+#undef MOCK_VARIADIC
 
     Mock_sqlite3();
     virtual ~Mock_sqlite3();

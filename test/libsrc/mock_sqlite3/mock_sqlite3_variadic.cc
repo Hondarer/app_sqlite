@@ -24,14 +24,16 @@ template <typename FunctionType> FunctionType resolve_variadic(const char *name)
     return reinterpret_cast<FunctionType>(resolveSharedSymbolOrExit(kLibSqlite3Name, name));
 }
 
-template <typename T> void trace_result(const char *func, const T value)
+template <typename T>
+void trace_result(const char *func, const char *caller_file, int caller_line, const char *caller_function,
+                  const T value)
 {
     if (getTraceLevel() <= TRACE_NONE)
     {
         return;
     }
 
-    std::printf("  > %s", func);
+    std::printf("  > %s (%s:%d %s)", func, caller_file, caller_line, caller_function);
     if (getTraceLevel() >= TRACE_DETAIL)
     {
         if constexpr (std::is_pointer_v<T>)
@@ -49,11 +51,11 @@ template <typename T> void trace_result(const char *func, const T value)
     }
 }
 
-void trace_void(const char *func)
+void trace_void(const char *func, const char *caller_file, int caller_line, const char *caller_function)
 {
     if (getTraceLevel() > TRACE_NONE)
     {
-        std::printf("  > %s\n", func);
+        std::printf("  > %s (%s:%d %s)\n", func, caller_file, caller_line, caller_function);
     }
 }
 
@@ -90,9 +92,13 @@ bool is_db_flag_operation(int operation)
 
 } // namespace
 
-int delegate_real_sqlite3_config(int operation, va_list args)
+int delegate_real_sqlite3_app_sqlite3_config(const char *caller_file, int caller_line, const char *caller_function,
+                                             int operation, va_list args)
 {
-    static sqlite3_config_fn real_fn = resolve_variadic<sqlite3_config_fn>("sqlite3_config");
+    (void)caller_file;
+    (void)caller_line;
+    (void)caller_function;
+    static sqlite3_config_fn real_fn = resolve_variadic<sqlite3_config_fn>("sqlite3_app_sqlite3_config");
 
     switch (operation)
     {
@@ -164,9 +170,13 @@ int delegate_real_sqlite3_config(int operation, va_list args)
     }
 }
 
-int delegate_real_sqlite3_db_config(sqlite3 *database, int operation, va_list args)
+int delegate_real_sqlite3_app_sqlite3_db_config(const char *caller_file, int caller_line, const char *caller_function,
+                                                sqlite3 *database, int operation, va_list args)
 {
-    static sqlite3_db_config_fn real_fn = resolve_variadic<sqlite3_db_config_fn>("sqlite3_db_config");
+    (void)caller_file;
+    (void)caller_line;
+    (void)caller_function;
+    static sqlite3_db_config_fn real_fn = resolve_variadic<sqlite3_db_config_fn>("sqlite3_app_sqlite3_db_config");
 
     if (operation == SQLITE_DBCONFIG_MAINDBNAME)
     {
@@ -188,30 +198,39 @@ int delegate_real_sqlite3_db_config(sqlite3 *database, int operation, va_list ar
     return real_fn(database, operation);
 }
 
-char *delegate_real_sqlite3_mprintf(const char *format, va_list args)
+char *delegate_real_sqlite3_app_sqlite3_mprintf(const char *caller_file, int caller_line, const char *caller_function,
+                                                const char *format, va_list args)
 {
-    return delegate_real_sqlite3_vmprintf(format, args);
+    return delegate_real_sqlite3_app_sqlite3_vmprintf(caller_file, caller_line, caller_function, format, args);
 }
 
-char *delegate_real_sqlite3_snprintf(int size, char *buffer, const char *format, va_list args)
+char *delegate_real_sqlite3_app_sqlite3_snprintf(const char *caller_file, int caller_line, const char *caller_function,
+                                                 int size, char *buffer, const char *format, va_list args)
 {
-    return delegate_real_sqlite3_vsnprintf(size, buffer, format, args);
+    return delegate_real_sqlite3_app_sqlite3_vsnprintf(caller_file, caller_line, caller_function, size, buffer, format,
+                                                       args);
 }
 
-void delegate_real_sqlite3_str_appendf(sqlite3_str *string, const char *format, va_list args)
+void delegate_real_sqlite3_app_sqlite3_str_appendf(const char *caller_file, int caller_line,
+                                                   const char *caller_function, sqlite3_str *string, const char *format,
+                                                   va_list args)
 {
-    delegate_real_sqlite3_str_vappendf(string, format, args);
+    delegate_real_sqlite3_app_sqlite3_str_vappendf(caller_file, caller_line, caller_function, string, format, args);
 }
 
-void delegate_real_sqlite3_log(int error_code, const char *format, va_list args)
+void delegate_real_sqlite3_app_sqlite3_log(const char *caller_file, int caller_line, const char *caller_function,
+                                           int error_code, const char *format, va_list args)
 {
-    static sqlite3_log_fn real_fn = resolve_variadic<sqlite3_log_fn>("sqlite3_log");
-    char *message = delegate_real_sqlite3_vmprintf(format, args);
+    (void)caller_file;
+    (void)caller_line;
+    (void)caller_function;
+    static sqlite3_log_fn real_fn = resolve_variadic<sqlite3_log_fn>("sqlite3_app_sqlite3_log");
+    char *message = delegate_real_sqlite3_app_sqlite3_vmprintf(caller_file, caller_line, caller_function, format, args);
 
     if (message != nullptr)
     {
         real_fn(error_code, "%s", message);
-        delegate_real_sqlite3_free(message);
+        delegate_real_sqlite3_app_sqlite3_free(caller_file, caller_line, caller_function, message);
     }
     else
     {
@@ -219,9 +238,14 @@ void delegate_real_sqlite3_log(int error_code, const char *format, va_list args)
     }
 }
 
-int delegate_real_sqlite3_test_control(int operation, va_list args)
+int delegate_real_sqlite3_app_sqlite3_test_control(const char *caller_file, int caller_line,
+                                                   const char *caller_function, int operation, va_list args)
 {
-    static sqlite3_test_control_fn real_fn = resolve_variadic<sqlite3_test_control_fn>("sqlite3_test_control");
+    (void)caller_file;
+    (void)caller_line;
+    (void)caller_function;
+    static sqlite3_test_control_fn real_fn =
+        resolve_variadic<sqlite3_test_control_fn>("sqlite3_app_sqlite3_test_control");
 
     switch (operation)
     {
@@ -351,9 +375,13 @@ int delegate_real_sqlite3_test_control(int operation, va_list args)
     }
 }
 
-int delegate_real_sqlite3_vtab_config(sqlite3 *database, int operation, va_list args)
+int delegate_real_sqlite3_app_sqlite3_vtab_config(const char *caller_file, int caller_line, const char *caller_function,
+                                                  sqlite3 *database, int operation, va_list args)
 {
-    static sqlite3_vtab_config_fn real_fn = resolve_variadic<sqlite3_vtab_config_fn>("sqlite3_vtab_config");
+    (void)caller_file;
+    (void)caller_line;
+    (void)caller_function;
+    static sqlite3_vtab_config_fn real_fn = resolve_variadic<sqlite3_vtab_config_fn>("sqlite3_app_sqlite3_vtab_config");
 
     if (operation == SQLITE_VTAB_CONSTRAINT_SUPPORT)
     {
@@ -362,150 +390,302 @@ int delegate_real_sqlite3_vtab_config(sqlite3 *database, int operation, va_list 
     return real_fn(database, operation);
 }
 
-#if !defined(_WIN32)
-    #define MOCK_SQLITE3_VARIADIC_IMPL(return_type, name, ...) MOCK_WEAK_IMPL(return_type, name, __VA_ARGS__)
+namespace
+{
+
+int invoke_sqlite3_app_sqlite3_config(const char *caller_file, int caller_line, const char *caller_function,
+                                      int operation, va_list args)
+{
+    int result;
+    if (_mock_sqlite3 != nullptr)
+    {
+        result = _mock_sqlite3->sqlite3_app_sqlite3_config(caller_file, caller_line, caller_function, operation, args);
+    }
+    else
+    {
+        result = delegate_real_sqlite3_app_sqlite3_config(caller_file, caller_line, caller_function, operation, args);
+    }
+    trace_result("sqlite3_app_sqlite3_config", caller_file, caller_line, caller_function, result);
+    return result;
+}
+
+int invoke_sqlite3_app_sqlite3_db_config(const char *caller_file, int caller_line, const char *caller_function,
+                                         sqlite3 *database, int operation, va_list args)
+{
+    int result;
+    if (_mock_sqlite3 != nullptr)
+    {
+        result = _mock_sqlite3->sqlite3_app_sqlite3_db_config(caller_file, caller_line, caller_function, database,
+                                                              operation, args);
+    }
+    else
+    {
+        result = delegate_real_sqlite3_app_sqlite3_db_config(caller_file, caller_line, caller_function, database,
+                                                             operation, args);
+    }
+    trace_result("sqlite3_app_sqlite3_db_config", caller_file, caller_line, caller_function, result);
+    return result;
+}
+
+char *invoke_sqlite3_app_sqlite3_mprintf(const char *caller_file, int caller_line, const char *caller_function,
+                                         const char *format, va_list args)
+{
+    char *result;
+    if (_mock_sqlite3 != nullptr)
+    {
+        result = _mock_sqlite3->sqlite3_app_sqlite3_mprintf(caller_file, caller_line, caller_function, format, args);
+    }
+    else
+    {
+        result = delegate_real_sqlite3_app_sqlite3_mprintf(caller_file, caller_line, caller_function, format, args);
+    }
+    trace_result("sqlite3_app_sqlite3_mprintf", caller_file, caller_line, caller_function, result);
+    return result;
+}
+
+char *invoke_sqlite3_app_sqlite3_snprintf(const char *caller_file, int caller_line, const char *caller_function,
+                                          int size, char *buffer, const char *format, va_list args)
+{
+    char *result;
+    if (_mock_sqlite3 != nullptr)
+    {
+        result = _mock_sqlite3->sqlite3_app_sqlite3_snprintf(caller_file, caller_line, caller_function, size, buffer,
+                                                             format, args);
+    }
+    else
+    {
+        result = delegate_real_sqlite3_app_sqlite3_snprintf(caller_file, caller_line, caller_function, size, buffer,
+                                                            format, args);
+    }
+    trace_result("sqlite3_app_sqlite3_snprintf", caller_file, caller_line, caller_function, result);
+    return result;
+}
+
+void invoke_sqlite3_app_sqlite3_str_appendf(const char *caller_file, int caller_line, const char *caller_function,
+                                            sqlite3_str *string, const char *format, va_list args)
+{
+    if (_mock_sqlite3 != nullptr)
+    {
+        _mock_sqlite3->sqlite3_app_sqlite3_str_appendf(caller_file, caller_line, caller_function, string, format, args);
+    }
+    else
+    {
+        delegate_real_sqlite3_app_sqlite3_str_appendf(caller_file, caller_line, caller_function, string, format, args);
+    }
+    trace_void("sqlite3_app_sqlite3_str_appendf", caller_file, caller_line, caller_function);
+}
+
+void invoke_sqlite3_app_sqlite3_log(const char *caller_file, int caller_line, const char *caller_function,
+                                    int error_code, const char *format, va_list args)
+{
+    if (_mock_sqlite3 != nullptr)
+    {
+        _mock_sqlite3->sqlite3_app_sqlite3_log(caller_file, caller_line, caller_function, error_code, format, args);
+    }
+    else
+    {
+        delegate_real_sqlite3_app_sqlite3_log(caller_file, caller_line, caller_function, error_code, format, args);
+    }
+    trace_void("sqlite3_app_sqlite3_log", caller_file, caller_line, caller_function);
+}
+
+int invoke_sqlite3_app_sqlite3_test_control(const char *caller_file, int caller_line, const char *caller_function,
+                                            int operation, va_list args)
+{
+    int result;
+    if (_mock_sqlite3 != nullptr)
+    {
+        result =
+            _mock_sqlite3->sqlite3_app_sqlite3_test_control(caller_file, caller_line, caller_function, operation, args);
+    }
+    else
+    {
+        result =
+            delegate_real_sqlite3_app_sqlite3_test_control(caller_file, caller_line, caller_function, operation, args);
+    }
+    trace_result("sqlite3_app_sqlite3_test_control", caller_file, caller_line, caller_function, result);
+    return result;
+}
+
+int invoke_sqlite3_app_sqlite3_vtab_config(const char *caller_file, int caller_line, const char *caller_function,
+                                           sqlite3 *database, int operation, va_list args)
+{
+    int result;
+    if (_mock_sqlite3 != nullptr)
+    {
+        result = _mock_sqlite3->sqlite3_app_sqlite3_vtab_config(caller_file, caller_line, caller_function, database,
+                                                                operation, args);
+    }
+    else
+    {
+        result = delegate_real_sqlite3_app_sqlite3_vtab_config(caller_file, caller_line, caller_function, database,
+                                                               operation, args);
+    }
+    trace_result("sqlite3_app_sqlite3_vtab_config", caller_file, caller_line, caller_function, result);
+    return result;
+}
+} // namespace
+
+#ifndef _WIN32
+    #define SQLITE_MOCK_PUBLIC(ret, name, ...) MOCK_WEAK_IMPL(ret, name, __VA_ARGS__)
 #else
-    #define MOCK_SQLITE3_VARIADIC_IMPL(return_type, name, ...) extern "C" return_type SQLITE_CDECL name(__VA_ARGS__)
+    #define SQLITE_MOCK_PUBLIC(ret, name, ...) extern "C" ret SQLITE_CDECL name(__VA_ARGS__)
 #endif
 
-MOCK_SQLITE3_VARIADIC_IMPL(int, sqlite3_config, int operation, ...)
+extern "C" int mock_sqlite3_app_sqlite3_config_variadic(const char *caller_file, int caller_line,
+                                                        const char *caller_function, int operation, ...)
 {
     va_list args;
-    int return_value;
     va_start(args, operation);
-    if (_mock_sqlite3 != nullptr)
-    {
-        return_value = _mock_sqlite3->sqlite3_config(operation, args);
-    }
-    else
-    {
-        return_value = delegate_real_sqlite3_config(operation, args);
-    }
+    int result = invoke_sqlite3_app_sqlite3_config(caller_file, caller_line, caller_function, operation, args);
     va_end(args);
-    trace_result(__func__, return_value);
-    return return_value;
+    return result;
 }
 
-MOCK_SQLITE3_VARIADIC_IMPL(int, sqlite3_db_config, sqlite3 *database, int operation, ...)
+SQLITE_MOCK_PUBLIC(int, sqlite3_app_sqlite3_config, int operation, ...)
 {
     va_list args;
-    int return_value;
     va_start(args, operation);
-    if (_mock_sqlite3 != nullptr)
-    {
-        return_value = _mock_sqlite3->sqlite3_db_config(database, operation, args);
-    }
-    else
-    {
-        return_value = delegate_real_sqlite3_db_config(database, operation, args);
-    }
+    int result = invoke_sqlite3_app_sqlite3_config("<unknown>", 0, "<unknown>", operation, args);
     va_end(args);
-    trace_result(__func__, return_value);
-    return return_value;
+    return result;
 }
 
-MOCK_SQLITE3_VARIADIC_IMPL(char *, sqlite3_mprintf, const char *format, ...)
+extern "C" int mock_sqlite3_app_sqlite3_db_config_variadic(const char *caller_file, int caller_line,
+                                                           const char *caller_function, sqlite3 *database,
+                                                           int operation, ...)
 {
     va_list args;
-    char *return_value;
-    va_start(args, format);
-    if (_mock_sqlite3 != nullptr)
-    {
-        return_value = _mock_sqlite3->sqlite3_mprintf(format, args);
-    }
-    else
-    {
-        return_value = delegate_real_sqlite3_mprintf(format, args);
-    }
+    va_start(args, operation);
+    int result =
+        invoke_sqlite3_app_sqlite3_db_config(caller_file, caller_line, caller_function, database, operation, args);
     va_end(args);
-    trace_result(__func__, return_value);
-    return return_value;
+    return result;
 }
 
-MOCK_SQLITE3_VARIADIC_IMPL(char *, sqlite3_snprintf, int size, char *buffer, const char *format, ...)
+SQLITE_MOCK_PUBLIC(int, sqlite3_app_sqlite3_db_config, sqlite3 *database, int operation, ...)
 {
     va_list args;
-    char *return_value;
-    va_start(args, format);
-    if (_mock_sqlite3 != nullptr)
-    {
-        return_value = _mock_sqlite3->sqlite3_snprintf(size, buffer, format, args);
-    }
-    else
-    {
-        return_value = delegate_real_sqlite3_snprintf(size, buffer, format, args);
-    }
+    va_start(args, operation);
+    int result = invoke_sqlite3_app_sqlite3_db_config("<unknown>", 0, "<unknown>", database, operation, args);
     va_end(args);
-    trace_result(__func__, return_value);
-    return return_value;
+    return result;
 }
 
-MOCK_SQLITE3_VARIADIC_IMPL(void, sqlite3_str_appendf, sqlite3_str *string, const char *format, ...)
+extern "C" char *mock_sqlite3_app_sqlite3_mprintf_variadic(const char *caller_file, int caller_line,
+                                                           const char *caller_function, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    if (_mock_sqlite3 != nullptr)
-    {
-        _mock_sqlite3->sqlite3_str_appendf(string, format, args);
-    }
-    else
-    {
-        delegate_real_sqlite3_str_appendf(string, format, args);
-    }
+    char *result = invoke_sqlite3_app_sqlite3_mprintf(caller_file, caller_line, caller_function, format, args);
     va_end(args);
-    trace_void(__func__);
+    return result;
 }
 
-MOCK_SQLITE3_VARIADIC_IMPL(void, sqlite3_log, int error_code, const char *format, ...)
+SQLITE_MOCK_PUBLIC(char *, sqlite3_app_sqlite3_mprintf, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    if (_mock_sqlite3 != nullptr)
-    {
-        _mock_sqlite3->sqlite3_log(error_code, format, args);
-    }
-    else
-    {
-        delegate_real_sqlite3_log(error_code, format, args);
-    }
+    char *result = invoke_sqlite3_app_sqlite3_mprintf("<unknown>", 0, "<unknown>", format, args);
     va_end(args);
-    trace_void(__func__);
+    return result;
 }
 
-MOCK_SQLITE3_VARIADIC_IMPL(int, sqlite3_test_control, int operation, ...)
+extern "C" char *mock_sqlite3_app_sqlite3_snprintf_variadic(const char *caller_file, int caller_line,
+                                                            const char *caller_function, int size, char *buffer,
+                                                            const char *format, ...)
 {
     va_list args;
-    int return_value;
-    va_start(args, operation);
-    if (_mock_sqlite3 != nullptr)
-    {
-        return_value = _mock_sqlite3->sqlite3_test_control(operation, args);
-    }
-    else
-    {
-        return_value = delegate_real_sqlite3_test_control(operation, args);
-    }
+    va_start(args, format);
+    char *result =
+        invoke_sqlite3_app_sqlite3_snprintf(caller_file, caller_line, caller_function, size, buffer, format, args);
     va_end(args);
-    trace_result(__func__, return_value);
-    return return_value;
+    return result;
 }
 
-MOCK_SQLITE3_VARIADIC_IMPL(int, sqlite3_vtab_config, sqlite3 *database, int operation, ...)
+SQLITE_MOCK_PUBLIC(char *, sqlite3_app_sqlite3_snprintf, int size, char *buffer, const char *format, ...)
 {
     va_list args;
-    int return_value;
-    va_start(args, operation);
-    if (_mock_sqlite3 != nullptr)
-    {
-        return_value = _mock_sqlite3->sqlite3_vtab_config(database, operation, args);
-    }
-    else
-    {
-        return_value = delegate_real_sqlite3_vtab_config(database, operation, args);
-    }
+    va_start(args, format);
+    char *result = invoke_sqlite3_app_sqlite3_snprintf("<unknown>", 0, "<unknown>", size, buffer, format, args);
     va_end(args);
-    trace_result(__func__, return_value);
-    return return_value;
+    return result;
 }
 
-#undef MOCK_SQLITE3_VARIADIC_IMPL
+extern "C" void mock_sqlite3_app_sqlite3_str_appendf_variadic(const char *caller_file, int caller_line,
+                                                              const char *caller_function, sqlite3_str *string,
+                                                              const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    invoke_sqlite3_app_sqlite3_str_appendf(caller_file, caller_line, caller_function, string, format, args);
+    va_end(args);
+}
+
+SQLITE_MOCK_PUBLIC(void, sqlite3_app_sqlite3_str_appendf, sqlite3_str *string, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    invoke_sqlite3_app_sqlite3_str_appendf("<unknown>", 0, "<unknown>", string, format, args);
+    va_end(args);
+}
+
+extern "C" void mock_sqlite3_app_sqlite3_log_variadic(const char *caller_file, int caller_line,
+                                                      const char *caller_function, int error_code, const char *format,
+                                                      ...)
+{
+    va_list args;
+    va_start(args, format);
+    invoke_sqlite3_app_sqlite3_log(caller_file, caller_line, caller_function, error_code, format, args);
+    va_end(args);
+}
+
+SQLITE_MOCK_PUBLIC(void, sqlite3_app_sqlite3_log, int error_code, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    invoke_sqlite3_app_sqlite3_log("<unknown>", 0, "<unknown>", error_code, format, args);
+    va_end(args);
+}
+
+extern "C" int mock_sqlite3_app_sqlite3_test_control_variadic(const char *caller_file, int caller_line,
+                                                              const char *caller_function, int operation, ...)
+{
+    va_list args;
+    va_start(args, operation);
+    int result = invoke_sqlite3_app_sqlite3_test_control(caller_file, caller_line, caller_function, operation, args);
+    va_end(args);
+    return result;
+}
+
+SQLITE_MOCK_PUBLIC(int, sqlite3_app_sqlite3_test_control, int operation, ...)
+{
+    va_list args;
+    va_start(args, operation);
+    int result = invoke_sqlite3_app_sqlite3_test_control("<unknown>", 0, "<unknown>", operation, args);
+    va_end(args);
+    return result;
+}
+
+extern "C" int mock_sqlite3_app_sqlite3_vtab_config_variadic(const char *caller_file, int caller_line,
+                                                             const char *caller_function, sqlite3 *database,
+                                                             int operation, ...)
+{
+    va_list args;
+    va_start(args, operation);
+    int result =
+        invoke_sqlite3_app_sqlite3_vtab_config(caller_file, caller_line, caller_function, database, operation, args);
+    va_end(args);
+    return result;
+}
+
+SQLITE_MOCK_PUBLIC(int, sqlite3_app_sqlite3_vtab_config, sqlite3 *database, int operation, ...)
+{
+    va_list args;
+    va_start(args, operation);
+    int result = invoke_sqlite3_app_sqlite3_vtab_config("<unknown>", 0, "<unknown>", database, operation, args);
+    va_end(args);
+    return result;
+}
+
+#undef SQLITE_MOCK_PUBLIC

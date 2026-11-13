@@ -1,13 +1,15 @@
+#define MOCK_SQLITE3_DISABLE_CALLER_INJECTION
 #include <mock_sqlite3.h>
+#undef MOCK_SQLITE3_DISABLE_CALLER_INJECTION
 
 #include <cstdio>
 #include <type_traits>
 
 extern "C"
 {
-    const char sqlite3_version[] = SQLITE_VERSION;
-    char *sqlite3_temp_directory = nullptr;
-    char *sqlite3_data_directory = nullptr;
+    const char sqlite3_app_sqlite3_version[] = SQLITE_VERSION;
+    char *sqlite3_app_sqlite3_temp_directory = nullptr;
+    char *sqlite3_app_sqlite3_data_directory = nullptr;
 }
 
 Mock_sqlite3 *_mock_sqlite3 = nullptr;
@@ -15,14 +17,15 @@ Mock_sqlite3 *_mock_sqlite3 = nullptr;
 namespace
 {
 
-template <typename T> void trace_result(const char *func, const T value)
+template <typename T> void trace_result(const char *func, const char *caller_file, const int caller_line,
+                                       const char *caller_function, const T value)
 {
     if (getTraceLevel() <= TRACE_NONE)
     {
         return;
     }
 
-    std::printf("  > %s", func);
+    std::printf("  > %s (%s:%d %s)", func, caller_file, caller_line, caller_function);
     if (getTraceLevel() >= TRACE_DETAIL)
     {
         if constexpr (std::is_pointer_v<T>)
@@ -44,11 +47,11 @@ template <typename T> void trace_result(const char *func, const T value)
     }
 }
 
-void trace_void(const char *func)
+void trace_void(const char *func, const char *caller_file, const int caller_line, const char *caller_function)
 {
     if (getTraceLevel() > TRACE_NONE)
     {
-        std::printf("  > %s\n", func);
+        std::printf("  > %s (%s:%d %s)\n", func, caller_file, caller_line, caller_function);
     }
 }
 
@@ -62,44 +65,56 @@ void trace_void(const char *func)
 
 #define MOCK_SQLITE3_EXPAND(...) __VA_ARGS__
 
-#define MOCK_SQLITE3_RET(return_type, name, parameters, arguments, matchers) \
-    return_type delegate_real_##name parameters \
+#define MOCK_SQLITE3_RET(return_type, original_name, api_name, parameters, arguments, mock_parameters, mock_arguments, matchers) \
+    return_type delegate_real_##api_name mock_parameters \
     { \
-        static auto real_fn = reinterpret_cast<decltype(&name)>(resolveSharedSymbolOrExit(kLibSqlite3Name, #name)); \
+        (void)caller_file; \
+        (void)caller_line; \
+        (void)caller_function; \
+        static auto real_fn = reinterpret_cast<decltype(&api_name)>(resolveSharedSymbolOrExit(kLibSqlite3Name, #api_name)); \
         return real_fn arguments; \
     } \
-    MOCK_SQLITE3_IMPL(return_type, name, MOCK_SQLITE3_EXPAND parameters) \
+    MOCK_SQLITE3_IMPL(return_type, api_name, MOCK_SQLITE3_EXPAND parameters) \
+    { \
+        const char *caller_file = "<unknown>"; \
+        const int caller_line = 0; \
+        const char *caller_function = "<unknown>"; \
+        return mock_##api_name mock_arguments; \
+    } \
+    extern "C" return_type mock_##api_name mock_parameters \
     { \
         return_type return_value; \
         if (_mock_sqlite3 != nullptr) \
-        { \
-            return_value = _mock_sqlite3->name arguments; \
-        } \
+            return_value = _mock_sqlite3->api_name mock_arguments; \
         else \
-        { \
-            return_value = delegate_real_##name arguments; \
-        } \
-        trace_result(__func__, return_value); \
+            return_value = delegate_real_##api_name mock_arguments; \
+        trace_result(#api_name, caller_file, caller_line, caller_function, return_value); \
         return return_value; \
     }
 
-#define MOCK_SQLITE3_VOID(return_type, name, parameters, arguments, matchers) \
-    return_type delegate_real_##name parameters \
+#define MOCK_SQLITE3_VOID(return_type, original_name, api_name, parameters, arguments, mock_parameters, mock_arguments, matchers) \
+    return_type delegate_real_##api_name mock_parameters \
     { \
-        static auto real_fn = reinterpret_cast<decltype(&name)>(resolveSharedSymbolOrExit(kLibSqlite3Name, #name)); \
+        (void)caller_file; \
+        (void)caller_line; \
+        (void)caller_function; \
+        static auto real_fn = reinterpret_cast<decltype(&api_name)>(resolveSharedSymbolOrExit(kLibSqlite3Name, #api_name)); \
         real_fn arguments; \
     } \
-    MOCK_SQLITE3_IMPL(return_type, name, MOCK_SQLITE3_EXPAND parameters) \
+    MOCK_SQLITE3_IMPL(return_type, api_name, MOCK_SQLITE3_EXPAND parameters) \
+    { \
+        const char *caller_file = "<unknown>"; \
+        const int caller_line = 0; \
+        const char *caller_function = "<unknown>"; \
+        mock_##api_name mock_arguments; \
+    } \
+    extern "C" return_type mock_##api_name mock_parameters \
     { \
         if (_mock_sqlite3 != nullptr) \
-        { \
-            _mock_sqlite3->name arguments; \
-        } \
+            _mock_sqlite3->api_name mock_arguments; \
         else \
-        { \
-            delegate_real_##name arguments; \
-        } \
-        trace_void(__func__); \
+            delegate_real_##api_name mock_arguments; \
+        trace_void(#api_name, caller_file, caller_line, caller_function); \
     }
 
 #include <mock_sqlite3_api_table.h>
@@ -111,22 +126,22 @@ void trace_void(const char *func)
 
 Mock_sqlite3::Mock_sqlite3()
 {
-#define MOCK_SQLITE3_RET(return_type, name, parameters, arguments, matchers) \
-    ON_CALL(*this, name matchers).WillByDefault(Invoke(delegate_real_##name));
-#define MOCK_SQLITE3_VOID(return_type, name, parameters, arguments, matchers) \
-    ON_CALL(*this, name matchers).WillByDefault(Invoke(delegate_real_##name));
+#define MOCK_SQLITE3_RET(return_type, original_name, api_name, parameters, arguments, mock_parameters, mock_arguments, matchers) \
+    ON_CALL(*this, api_name matchers).WillByDefault(Invoke(delegate_real_##api_name));
+#define MOCK_SQLITE3_VOID(return_type, original_name, api_name, parameters, arguments, mock_parameters, mock_arguments, matchers) \
+    ON_CALL(*this, api_name matchers).WillByDefault(Invoke(delegate_real_##api_name));
 #include <mock_sqlite3_api_table.h>
 #undef MOCK_SQLITE3_VOID
 #undef MOCK_SQLITE3_RET
 
-    ON_CALL(*this, sqlite3_config(_, _)).WillByDefault(Invoke(delegate_real_sqlite3_config));
-    ON_CALL(*this, sqlite3_db_config(_, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_db_config));
-    ON_CALL(*this, sqlite3_mprintf(_, _)).WillByDefault(Invoke(delegate_real_sqlite3_mprintf));
-    ON_CALL(*this, sqlite3_snprintf(_, _, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_snprintf));
-    ON_CALL(*this, sqlite3_str_appendf(_, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_str_appendf));
-    ON_CALL(*this, sqlite3_log(_, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_log));
-    ON_CALL(*this, sqlite3_test_control(_, _)).WillByDefault(Invoke(delegate_real_sqlite3_test_control));
-    ON_CALL(*this, sqlite3_vtab_config(_, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_vtab_config));
+    ON_CALL(*this, sqlite3_app_sqlite3_config(_, _, _, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_app_sqlite3_config));
+    ON_CALL(*this, sqlite3_app_sqlite3_db_config(_, _, _, _, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_app_sqlite3_db_config));
+    ON_CALL(*this, sqlite3_app_sqlite3_mprintf(_, _, _, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_app_sqlite3_mprintf));
+    ON_CALL(*this, sqlite3_app_sqlite3_snprintf(_, _, _, _, _, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_app_sqlite3_snprintf));
+    ON_CALL(*this, sqlite3_app_sqlite3_str_appendf(_, _, _, _, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_app_sqlite3_str_appendf));
+    ON_CALL(*this, sqlite3_app_sqlite3_log(_, _, _, _, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_app_sqlite3_log));
+    ON_CALL(*this, sqlite3_app_sqlite3_test_control(_, _, _, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_app_sqlite3_test_control));
+    ON_CALL(*this, sqlite3_app_sqlite3_vtab_config(_, _, _, _, _, _)).WillByDefault(Invoke(delegate_real_sqlite3_app_sqlite3_vtab_config));
     TESTFW_REGISTER_MOCK_INSTANCE(_mock_sqlite3);
 }
 

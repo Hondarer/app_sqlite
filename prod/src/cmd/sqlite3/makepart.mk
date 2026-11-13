@@ -4,6 +4,12 @@
 # 手動改変しない (再展開で上書きされる)。行編集オプション (-DHAVE_READLINE 等) は
 # 付与せず、readline/editline への外部依存を避けた最小構成でビルドする。
 
+ifdef PLATFORM_WINDOWS
+    CFLAGS += /FI"$(MYAPP_DIR)/prod/include_internal/sqlite3_app_namespace.h"
+else
+    CFLAGS += -include "$(MYAPP_DIR)/prod/include_internal/sqlite3_app_namespace.h"
+endif
+
 # upstream の一次ソース自体に残る警告だけを、このリーフで抑制する。
 ifdef PLATFORM_LINUX
     CFLAGS   += -Wno-padded -Wno-cast-qual -Wno-undef -Wno-switch-default -Wno-missing-prototypes -Wno-missing-declarations -Wno-unused-parameter -Wno-conversion -Wno-sign-conversion
