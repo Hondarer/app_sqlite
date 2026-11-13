@@ -82,7 +82,7 @@ TEST(exportTest, sqlite3_symbols_match_api_table)
         std::end(kUnofficialWin32ExportNames)); // [状態] - sqlite3.h に無い Windows 固有シンボルを期待値へ追加する。
     expected.insert(testing::identManifestSymbolName(
         "libsqlite3_app" TESTFW_SHARED_LIBRARY_EXTENSION)); // [状態] - IDENT manifest シンボル名を期待値へ追加する。
-#endif                                                  /* PLATFORM_WINDOWS */
+#endif                                                      /* PLATFORM_WINDOWS */
     std::string path = findWorkspaceRoot() + "/app/sqlite/prod/lib/libsqlite3_app" +
                        TESTFW_SHARED_LIBRARY_EXTENSION; // [状態] - 検査対象を libsqlite3_app の動的ライブラリとする。
 

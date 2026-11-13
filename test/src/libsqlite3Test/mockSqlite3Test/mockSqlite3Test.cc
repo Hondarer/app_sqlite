@@ -111,9 +111,10 @@ TEST(mockSqlite3Test, overrides_variadic_config_result)
 TEST(mockSqlite3Test, isolates_open_exec_close_without_real_database)
 {
     // Arrange
-    NiceMock<Mock_sqlite3> mock_sqlite3;                  // [状態] - 既定動作の Mock_sqlite3 を生成する。
-    sqlite3 *fake_database = reinterpret_cast<sqlite3 *>(1); // [状態] - モックの出力とするダミーの sqlite3 ポインターを用意する。
-    sqlite3 *database = nullptr;                          // [状態] - データベース ハンドル変数を初期化する。
+    NiceMock<Mock_sqlite3> mock_sqlite3; // [状態] - 既定動作の Mock_sqlite3 を生成する。
+    sqlite3 *fake_database =
+        reinterpret_cast<sqlite3 *>(1); // [状態] - モックの出力とするダミーの sqlite3 ポインターを用意する。
+    sqlite3 *database = nullptr;        // [状態] - データベース ハンドル変数を初期化する。
 
     // Pre-Assert
     EXPECT_CALL(mock_sqlite3, sqlite3_open(StrEq(":memory:"), _))
