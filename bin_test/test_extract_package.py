@@ -39,6 +39,8 @@ class ExtractPackageTest(unittest.TestCase):
         self.assertIn("sqlite3_api->open", extension_header)
         namespace = self.app / "prod/include_internal/sqlite3_app_namespace.h"
         self.assertTrue(namespace.is_file())
+        # 列メタデータ API は sqlite3.c が 0 に #define するため、名前空間マクロを生成しない。
+        self.assertNotIn("#define sqlite3_column_database_name ", namespace.read_text(encoding="utf-8"))
         before = {p: p.stat().st_mtime_ns for p in self.app.rglob("*") if p.is_file()}
         result = self.run_extract()
         self.assertEqual(0, result.returncode, result.stderr)

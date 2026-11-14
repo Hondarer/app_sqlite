@@ -30,6 +30,7 @@ SQLite を利用するプログラムの単体テスト向けに、Google Mock �
 `sqlite3` コマンドは行編集オプション (`-DHAVE_READLINE` 等) を付与しない最小構成でビルドしており、`readline`/`editline` 等の外部ライブラリには依存しません。
 
 `sqlite3ext.h` を使う拡張でも、呼び出しには `sqlite3_app_` 付きの API 名を使います。  
+列メタデータ API (`sqlite3_column_database_name()`、`sqlite3_column_table_name()`、`sqlite3_column_origin_name()` と各 16 版) は、`SQLITE_ENABLE_COLUMN_METADATA` を定義しないこのビルドでは実体がないため、`sqlite3_app_` を付けません。  
 `sqlite3_api_routines` のフィールドとレイアウト、外部拡張の入口名は維持します。  
 既存の拡張は、新しいヘッダーで再ビルドしてください。
 
